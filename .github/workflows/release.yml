@@ -22,9 +22,6 @@ jobs:
           - os: ubuntu-latest
             artifact: lattice-linux-x86_64
             binary: dist/lattice
-          - os: macos-13
-            artifact: lattice-macos-x86_64
-            binary: dist/lattice
           - os: macos-latest
             artifact: lattice-macos-arm64
             binary: dist/lattice
