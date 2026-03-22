@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from lattice.audit.trail import AuditRecord, AuditTrail, StepRecord
 from lattice.auth.scopes import (
@@ -341,4 +341,4 @@ class Engine:
             await _execute_step(step_meta, store, audit_step)
 
         result = await defn.fn(ctx)
-        return result
+        return cast(ProjectionData, result)

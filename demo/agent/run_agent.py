@@ -29,8 +29,8 @@ from rich.table import Table
 from demo.agent.agent import LatticeAgent
 from demo.procurement.capabilities.equipment_procurement import equipment_procurement
 from demo.procurement.capabilities.vendor_onboarding import vendor_onboarding
-from demo.travel.capabilities.trip_planning import trip_planning
 from demo.stubs import client_factory
+from demo.travel.capabilities.trip_planning import trip_planning
 from lattice.runtime.engine import Engine
 from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
 

@@ -19,10 +19,10 @@ class RetryPolicy:
 
     def delay_for(self, attempt: int) -> float:
         if self.backoff == "exponential":
-            return self.base_delay * (2**attempt) + random.uniform(0, 0.5)
+            return float(self.base_delay * (2**attempt) + random.uniform(0, 0.5))
         elif self.backoff == "linear":
-            return self.base_delay * (attempt + 1)
-        return self.base_delay
+            return float(self.base_delay * (attempt + 1))
+        return float(self.base_delay)
 
 
 def retry(

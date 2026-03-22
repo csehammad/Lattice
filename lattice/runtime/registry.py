@@ -14,7 +14,7 @@ import importlib
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from lattice.capability import CapabilityDefinition, get_capability_def
 from lattice.errors import LatticeError
@@ -52,7 +52,7 @@ class CapabilityRegistry:
             raise LatticeError(f"Capability '{name}' not registered")
         return self._functions[name]
 
-    def list(self) -> list[CapabilityDefinition]:
+    def list_capabilities(self) -> list[CapabilityDefinition]:
         return list(self._capabilities.values())
 
     def signatures(self) -> list[str]:
@@ -99,7 +99,8 @@ class CapabilityRegistry:
         Use ``register()`` to add executable capabilities.
         """
         path = Path(path)
-        return json.loads(path.read_text())
+        data = json.loads(path.read_text())
+        return cast(dict[str, Any], data)
 
     # -- LLM tool exports --------------------------------------------------
 
@@ -154,6 +155,10 @@ class CapabilityRegistry:
                 },
             })
         return tools
+
+    # Backward-compat alias: historically exposed as `.list()`.
+    def list(self) -> list[CapabilityDefinition]:
+        return self.list_capabilities()
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +222,7 @@ class LazyRegistry:
             projection_field_type,
         )
 
-        for defn in registry.list():
+        for defn in registry.list_capabilities():
             fn = registry.get_function(defn.name)
             proj_out: dict[str, Any] = {}
             for fname, spec in defn.projection_schema.items():
@@ -245,7 +250,7 @@ class LazyRegistry:
             len(manifest),
         )
         # Pre-populate the inner registry with already-loaded functions
-        for defn in registry.list():
+        for defn in registry.list_capabilities():
             fn = registry.get_function(defn.name)
             instance._registry.register(fn)
             instance._loaded.add(defn.name)

@@ -25,7 +25,6 @@ from lattice.auth.scopes import CredentialStore
 from lattice.runtime.engine import Engine
 from lattice.runtime.registry import LazyRegistry
 
-
 _ALL_DEMO_SCOPES = {
     "compliance.read",
     "vendor.write",
@@ -161,7 +160,11 @@ class LatticeAgent:
         self._messages = [system_msg, *tail]
 
     @staticmethod
-    def _tool_error(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _tool_error(
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return {
             "error": {
                 "code": code,

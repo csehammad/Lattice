@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from lattice.auth.scopes import CredentialStore
 from lattice.intent import Intent
@@ -81,5 +81,6 @@ class ExecutionContext:
         Otherwise raises NotImplementedError.
         """
         if self._human_input_handler is not None:
-            return await self._human_input_handler(task, expected_output)
+            result = await self._human_input_handler(task, expected_output)
+            return cast(dict[str, Any], result)
         raise NotImplementedError(f"No human input handler configured.  Task: {task}")

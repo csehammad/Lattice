@@ -111,7 +111,12 @@ class AnthropicBackend(LLMBackend):
             messages=[{"role": "user", "content": user_prompt}],
             temperature=temperature,
         )
-        return LLMResponse(text=resp.content[0].text)
+        text_parts: list[str] = []
+        for block in resp.content:
+            block_text = getattr(block, "text", None)
+            if isinstance(block_text, str):
+                text_parts.append(block_text)
+        return LLMResponse(text="\n".join(text_parts))
 
 
 _DEFAULT_MODELS = {

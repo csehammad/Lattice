@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from click.testing import CliRunner
 
 from lattice.cli.main import cli

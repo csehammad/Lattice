@@ -6,9 +6,7 @@ so the agent and runner can execute any capability.
 
 from __future__ import annotations
 
-from demo.procurement.stubs import client_factory as _procurement_factory
 from demo.procurement.stubs import _CLIENT_MAP as _PROCUREMENT_MAP
-from demo.travel.stubs import client_factory as _travel_factory
 from demo.travel.stubs import _CLIENT_MAP as _TRAVEL_MAP
 
 _UNIFIED_MAP = {**_PROCUREMENT_MAP, **_TRAVEL_MAP}

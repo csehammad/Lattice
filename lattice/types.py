@@ -42,7 +42,10 @@ def projection_field_type(spec: Any) -> type:
     if isinstance(spec, type):
         return spec
     if isinstance(spec, dict):
-        return spec.get("type", str)
+        maybe_type = spec.get("type", str)
+        if isinstance(maybe_type, type):
+            return maybe_type
+        return str
     return type(spec)
 
 

@@ -162,7 +162,11 @@ async def trip_planning(ctx):
     @step(depends_on=[check_policy], scope="travel.approve")
     @retry(max=2, on=[TimeoutError, ServerError])
     @soft_failure(
-        fallback={"approval_id": None, "approval_status": "pending", "warning": "auto-approval failed"}
+        fallback={
+            "approval_id": None,
+            "approval_status": "pending",
+            "warning": "auto-approval failed",
+        }
     )
     async def request_approval():
         if not state.check_policy.requires_approval:

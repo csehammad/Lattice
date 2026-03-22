@@ -26,34 +26,32 @@ import contextvars
 import json
 import logging
 import sys
-import time
 from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Execution context carried across async boundaries
 # ---------------------------------------------------------------------------
 
-_exec_ctx: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
-    "lattice_log_context", default={}
+_exec_ctx: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "lattice_log_context", default=None
 )
 
 
-def set_log_context(**kwargs: Any) -> contextvars.Token[dict[str, Any]]:
+def set_log_context(**kwargs: Any) -> contextvars.Token[dict[str, Any] | None]:
     """Set key-value pairs on the async-safe log context."""
-    current = _exec_ctx.get()
+    current = _exec_ctx.get() or {}
     merged = {**current, **kwargs}
     return _exec_ctx.set(merged)
 
 
-def clear_log_context(token: contextvars.Token[dict[str, Any]]) -> None:
+def clear_log_context(token: contextvars.Token[dict[str, Any] | None]) -> None:
     """Restore log context to the state before the matching ``set_log_context``."""
     _exec_ctx.reset(token)
 
 
 def get_log_context() -> dict[str, Any]:
     """Return the current log context (read-only copy)."""
-    return dict(_exec_ctx.get())
+    return dict(_exec_ctx.get() or {})
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +62,7 @@ class LatticeTextFormatter(logging.Formatter):
     """Human-readable formatter that includes execution context fields."""
 
     def format(self, record: logging.LogRecord) -> str:
-        ctx = _exec_ctx.get()
+        ctx = _exec_ctx.get() or {}
         parts = [self.formatTime(record), record.levelname.ljust(8), record.name]
 
         if ctx.get("execution_id"):
@@ -88,7 +86,7 @@ class LatticeJSONFormatter(logging.Formatter):
     """Machine-readable JSON-lines formatter with full context."""
 
     def format(self, record: logging.LogRecord) -> str:
-        ctx = _exec_ctx.get()
+        ctx = _exec_ctx.get() or {}
         payload: dict[str, Any] = {
             "ts": record.created,
             "time": self.formatTime(record),

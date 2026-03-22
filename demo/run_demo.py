@@ -23,10 +23,10 @@ from rich.table import Table
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from demo.procurement.capabilities.vendor_onboarding import vendor_onboarding
 from demo.procurement.capabilities.equipment_procurement import equipment_procurement
-from demo.travel.capabilities.trip_planning import trip_planning
+from demo.procurement.capabilities.vendor_onboarding import vendor_onboarding
 from demo.stubs import client_factory
+from demo.travel.capabilities.trip_planning import trip_planning
 from lattice.auth.scopes import CredentialStore
 from lattice.runtime.engine import Engine
 
