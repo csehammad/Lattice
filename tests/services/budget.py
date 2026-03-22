@@ -20,9 +20,7 @@ class BudgetService:
     def get_remaining(self, department: str) -> float:
         return self._budgets.get(department, 0.0)
 
-    async def check_limit(
-        self, *, department: str, amount: float, category: str
-    ) -> Result:
+    async def check_limit(self, *, department: str, amount: float, category: str) -> Result:
         remaining = self._budgets.get(department, 0.0)
         return Result(
             approved=amount <= remaining,
@@ -41,8 +39,7 @@ class BudgetService:
         remaining = self._budgets.get(department, 0.0)
         if amount > remaining:
             raise ValueError(
-                f"Insufficient budget: {department} has ${remaining:.2f}, "
-                f"requested ${amount:.2f}"
+                f"Insufficient budget: {department} has ${remaining:.2f}, requested ${amount:.2f}"
             )
         self._budgets[department] = remaining - amount
         alloc = {

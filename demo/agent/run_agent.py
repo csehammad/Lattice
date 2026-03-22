@@ -107,17 +107,19 @@ async def main() -> None:
     agent = build_agent(model)
 
     n_capabilities = len(agent.lazy_registry.manifest)
-    console.print(Panel(
-        "[bold]Lattice Agent Demo — Search-then-Execute[/bold]\n\n"
-        "The agent has TWO tools:\n"
-        "  [cyan]search_capabilities[/cyan] — discover what's available\n"
-        "  [cyan]execute_capability[/cyan]  — run a capability by name\n\n"
-        f"Registry: {n_capabilities} capabilities in manifest "
-        f"(0 loaded at startup)\n\n"
-        "[dim]Domains: Procurement, Travel[/dim]\n"
-        f"[dim]Model: {model}[/dim]",
-        border_style="blue",
-    ))
+    console.print(
+        Panel(
+            "[bold]Lattice Agent Demo — Search-then-Execute[/bold]\n\n"
+            "The agent has TWO tools:\n"
+            "  [cyan]search_capabilities[/cyan] — discover what's available\n"
+            "  [cyan]execute_capability[/cyan]  — run a capability by name\n\n"
+            f"Registry: {n_capabilities} capabilities in manifest "
+            f"(0 loaded at startup)\n\n"
+            "[dim]Domains: Procurement, Travel[/dim]\n"
+            f"[dim]Model: {model}[/dim]",
+            border_style="blue",
+        )
+    )
 
     console.print(
         "[dim]Type your request. The agent will search for the right "

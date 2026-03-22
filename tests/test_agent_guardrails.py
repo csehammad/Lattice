@@ -49,9 +49,7 @@ async def test_execute_tool_requires_object_inputs():
 def test_message_history_is_bounded():
     agent = _build_agent()
     # keep system message + 4 latest entries
-    agent._messages.extend(
-        {"role": "user", "content": f"m{i}"} for i in range(10)
-    )
+    agent._messages.extend({"role": "user", "content": f"m{i}"} for i in range(10))
     agent._prune_history()
     assert len(agent._messages) == 5
     assert agent._messages[0]["role"] == "system"

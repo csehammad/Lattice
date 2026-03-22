@@ -128,8 +128,10 @@ class AuditTrail:
         self._records.append(audit)
         logger.debug(
             "Audit recorded: %s [%s] %s (%.1fms)",
-            audit.capability_name, audit.execution_id[:8],
-            audit.status, audit.duration_ms or 0,
+            audit.capability_name,
+            audit.execution_id[:8],
+            audit.status,
+            audit.duration_ms or 0,
         )
 
     @property

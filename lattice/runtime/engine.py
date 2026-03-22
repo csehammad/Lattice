@@ -57,7 +57,9 @@ def _validate_inputs(defn: CapabilityDefinition, raw: dict[str, Any]) -> None:
         if not isinstance(value, field_type):
             logger.error(
                 "Input '%s' type mismatch: expected %s, got %s",
-                field_name, field_type.__name__, type(value).__name__,
+                field_name,
+                field_type.__name__,
+                type(value).__name__,
             )
             raise ValidationError(
                 f"Input '{field_name}' must be {field_type.__name__}, got {type(value).__name__}"
@@ -143,7 +145,9 @@ async def _run_step_with_retry(
             if attempt > 0:
                 logger.info(
                     "Step '%s' succeeded on attempt %d/%d",
-                    step_meta.name, attempt + 1, max_attempts,
+                    step_meta.name,
+                    attempt + 1,
+                    max_attempts,
                 )
             return result if isinstance(result, dict) else {"_value": result}
         except Exception as exc:
@@ -151,21 +155,30 @@ async def _run_step_with_retry(
             if policy and not isinstance(exc, tuple(policy.on)):
                 logger.error(
                     "Step '%s' raised non-retryable %s: %s",
-                    step_meta.name, type(exc).__name__, exc,
+                    step_meta.name,
+                    type(exc).__name__,
+                    exc,
                 )
                 raise
             if attempt < max_attempts - 1 and policy:
                 delay = policy.delay_for(attempt)
                 logger.warning(
                     "Step '%s' attempt %d/%d failed (%s: %s), retrying in %.1fs",
-                    step_meta.name, attempt + 1, max_attempts,
-                    type(exc).__name__, exc, delay,
+                    step_meta.name,
+                    attempt + 1,
+                    max_attempts,
+                    type(exc).__name__,
+                    exc,
+                    delay,
                 )
                 await asyncio.sleep(delay)
             else:
                 logger.error(
                     "Step '%s' exhausted %d attempts, last error: %s: %s",
-                    step_meta.name, max_attempts, type(exc).__name__, exc,
+                    step_meta.name,
+                    max_attempts,
+                    type(exc).__name__,
+                    exc,
                 )
 
     raise last_error  # type: ignore[misc]
@@ -189,7 +202,8 @@ async def _execute_step(
         audit_step.mark_completed(result)
         logger.debug(
             "Step '%s' completed (keys=%s)",
-            step_meta.name, list(result.keys()) if isinstance(result, dict) else "scalar",
+            step_meta.name,
+            list(result.keys()) if isinstance(result, dict) else "scalar",
         )
     except Exception as exc:
         audit_step.mark_failed(exc)
@@ -206,14 +220,18 @@ async def _execute_step(
             audit_step.error = f"soft-failure fallback applied: {exc}"
             logger.warning(
                 "Step '%s' soft-failure fallback applied (%s: %s)",
-                step_meta.name, type(exc).__name__, exc,
+                step_meta.name,
+                type(exc).__name__,
+                exc,
             )
             return
 
         if hard is not None and isinstance(hard.on_exhausted, _Abort):
             logger.error(
                 "Step '%s' hard-failure abort (%s: %s)",
-                step_meta.name, type(exc).__name__, exc,
+                step_meta.name,
+                type(exc).__name__,
+                exc,
             )
             raise AbortExecution(step_meta.name, exc) from exc
 
@@ -262,7 +280,10 @@ class Engine:
         )
         logger.info(
             "Executing %s v%s (requester=%s, scopes=%d)",
-            defn.name, defn.version, requester, len(creds.granted_scopes),
+            defn.name,
+            defn.version,
+            requester,
+            len(creds.granted_scopes),
         )
 
         ctx = ExecutionContext(
@@ -283,7 +304,9 @@ class Engine:
             audit.complete(projection_result)
             logger.info(
                 "Completed %s in %.1fms (%d steps)",
-                defn.name, audit.duration_ms or 0, len(audit.steps),
+                defn.name,
+                audit.duration_ms or 0,
+                len(audit.steps),
             )
             return projection_result
 

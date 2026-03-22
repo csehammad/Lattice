@@ -128,9 +128,7 @@ async def trip_planning(ctx):
         }
 
     @step(depends_on=[])
-    @soft_failure(
-        fallback={"tier": "unknown", "points": 0, "programs": []}
-    )
+    @soft_failure(fallback={"tier": "unknown", "points": 0, "programs": []})
     async def lookup_loyalty():
         client = ctx.client("loyalty_api")
         result = await client.lookup(employee_email=ctx.intent.traveler_email)
@@ -222,9 +220,7 @@ async def trip_planning(ctx):
 
     @step(depends_on=[allocate_budget], scope="travel.book")
     @retry(max=2, on=[TimeoutError, ServerError])
-    @soft_failure(
-        fallback={"confirmation": "NONE", "status": "skipped"}
-    )
+    @soft_failure(fallback={"confirmation": "NONE", "status": "skipped"})
     async def book_hotel():
         if state.search_hotels.hotel_id is None:
             return {"confirmation": "NONE", "status": "no_hotel_found"}

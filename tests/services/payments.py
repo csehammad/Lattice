@@ -12,9 +12,7 @@ class PaymentsService:
     def get_terms(self, vendor_id: str) -> dict | None:
         return self._terms.get(vendor_id)
 
-    async def set_terms(
-        self, *, vendor_id: str, terms: str, currency: str
-    ) -> Result:
+    async def set_terms(self, *, vendor_id: str, terms: str, currency: str) -> Result:
         record = {
             "vendor_id": vendor_id,
             "terms": terms,

@@ -83,12 +83,11 @@ class LatticeAgent:
         self.scopes = scopes or _ALL_DEMO_SCOPES
         self.max_messages = max_messages
         self._tools = LazyRegistry.openai_meta_tools()
-        self._messages: list[dict[str, Any]] = [
-            {"role": "system", "content": _SYSTEM_PROMPT}
-        ]
+        self._messages: list[dict[str, Any]] = [{"role": "system", "content": _SYSTEM_PROMPT}]
 
     def _get_openai_client(self):
         import openai
+
         return openai.OpenAI()
 
     async def handle_message(self, user_message: str) -> str:
@@ -132,11 +131,13 @@ class LatticeAgent:
                         tool_call.function.name,
                         arguments if isinstance(arguments, dict) else {},
                     )
-                self._messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": json.dumps(result, default=str),
-                })
+                self._messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(result, default=str),
+                    }
+                )
                 self._prune_history()
 
         # Fallback if the model didn't produce a text response after max rounds
@@ -156,7 +157,7 @@ class LatticeAgent:
         if len(self._messages) <= self.max_messages:
             return
         system_msg = self._messages[0]
-        tail = self._messages[-(self.max_messages - 1):]
+        tail = self._messages[-(self.max_messages - 1) :]
         self._messages = [system_msg, *tail]
 
     @staticmethod
@@ -173,9 +174,7 @@ class LatticeAgent:
             }
         }
 
-    async def _handle_tool_call(
-        self, tool_name: str, arguments: dict[str, Any]
-    ) -> Any:
+    async def _handle_tool_call(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """Route a tool call to the appropriate handler."""
         if tool_name == "search_capabilities":
             query = arguments.get("query", "")
@@ -218,9 +217,7 @@ class LatticeAgent:
             return [{"message": "No capabilities found matching your query."}]
         return results
 
-    async def _handle_execute(
-        self, capability_name: str, inputs: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _handle_execute(self, capability_name: str, inputs: dict[str, Any]) -> dict[str, Any]:
         """Load (if needed) and execute a capability through the engine."""
         self.lazy_registry.ensure_loaded(capability_name)
         fn = self.lazy_registry.get_function(capability_name)

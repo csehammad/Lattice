@@ -46,7 +46,9 @@ class CredentialStore:
         if scope and not self.has_scope(scope):
             logger.warning(
                 "Permission denied: step '%s' requires scope '%s' (available: %s)",
-                step_name, scope, self.granted_scopes,
+                step_name,
+                scope,
+                self.granted_scopes,
             )
             raise PermissionDenied(step_name, scope, self.granted_scopes)
 
@@ -54,7 +56,8 @@ class CredentialStore:
         if role and not self.has_role(role):
             logger.warning(
                 "Permission denied: step '%s' requires role '%s'",
-                step_name, role,
+                step_name,
+                role,
             )
             raise PermissionDenied(step_name, f"role:{role}", self.granted_scopes)
 

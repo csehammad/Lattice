@@ -112,8 +112,14 @@ class CapabilityRegistry:
             projection_field_type,
         )
 
-        _TYPE_MAP = {str: "string", int: "integer", float: "number",
-                     bool: "boolean", list: "array", dict: "object"}
+        _TYPE_MAP = {
+            str: "string",
+            int: "integer",
+            float: "number",
+            bool: "boolean",
+            list: "array",
+            dict: "object",
+        }
         tools: list[dict[str, Any]] = []
         for defn in self._capabilities.values():
             properties: dict[str, Any] = {}
@@ -142,18 +148,20 @@ class CapabilityRegistry:
                 f"Returns a projection with:\n{proj_description}"
             )
 
-            tools.append({
-                "type": "function",
-                "function": {
-                    "name": defn.name,
-                    "description": description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": properties,
-                        "required": required,
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": defn.name,
+                        "description": description,
+                        "parameters": {
+                            "type": "object",
+                            "properties": properties,
+                            "required": required,
+                        },
                     },
-                },
-            })
+                }
+            )
         return tools
 
     # Backward-compat alias: historically exposed as `.list()`.
@@ -165,19 +173,22 @@ class CapabilityRegistry:
 # LazyRegistry — manifest-backed progressive loading
 # ---------------------------------------------------------------------------
 
+
 def _score_entry(entry: dict[str, Any], keywords: list[str]) -> int:
     """Score a manifest entry against search keywords (case-insensitive)."""
-    searchable = " ".join([
-        entry.get("name", ""),
-        entry.get("signature", ""),
-        " ".join(entry.get("inputs", {}).keys()),
-        " ".join(entry.get("projection", {}).keys()),
-        " ".join(
-            spec.get("description", "")
-            for spec in entry.get("projection", {}).values()
-            if isinstance(spec, dict)
-        ),
-    ]).lower()
+    searchable = " ".join(
+        [
+            entry.get("name", ""),
+            entry.get("signature", ""),
+            " ".join(entry.get("inputs", {}).keys()),
+            " ".join(entry.get("projection", {}).keys()),
+            " ".join(
+                spec.get("description", "")
+                for spec in entry.get("projection", {}).values()
+                if isinstance(spec, dict)
+            ),
+        ]
+    ).lower()
     return sum(1 for kw in keywords if kw in searchable)
 
 
@@ -275,7 +286,9 @@ class LazyRegistry:
         results = [entry for _, entry in scored[:limit]]
         logger.debug(
             "Search '%s' matched %d/%d capabilities",
-            query, len(results), len(self._manifest),
+            query,
+            len(results),
+            len(self._manifest),
         )
         return results
 
@@ -291,9 +304,7 @@ class LazyRegistry:
         module_path = entry.get("module_path")
         function_name = entry.get("function_name")
         if not module_path or not function_name:
-            raise LatticeError(
-                f"Capability '{name}' manifest missing module_path/function_name"
-            )
+            raise LatticeError(f"Capability '{name}' manifest missing module_path/function_name")
 
         logger.info("Lazy-loading capability '%s' from %s.%s", name, module_path, function_name)
         mod = importlib.import_module(module_path)

@@ -58,6 +58,7 @@ def get_log_context() -> dict[str, Any]:
 # Formatters
 # ---------------------------------------------------------------------------
 
+
 class LatticeTextFormatter(logging.Formatter):
     """Human-readable formatter that includes execution context fields."""
 
@@ -100,7 +101,8 @@ class LatticeJSONFormatter(logging.Formatter):
             payload["exception"] = self.formatException(record.exc_info)
 
         extra_keys = {
-            k: v for k, v in record.__dict__.items()
+            k: v
+            for k, v in record.__dict__.items()
             if k.startswith("lattice_") or k.startswith("lx_")
         }
         if extra_keys:

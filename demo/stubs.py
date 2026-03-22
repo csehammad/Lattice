@@ -15,8 +15,5 @@ _UNIFIED_MAP = {**_PROCUREMENT_MAP, **_TRAVEL_MAP}
 def client_factory(name: str, credentials=None):
     """Return a stub client by name from any domain."""
     if name not in _UNIFIED_MAP:
-        raise KeyError(
-            f"No stub client registered for '{name}'. "
-            f"Available: {sorted(_UNIFIED_MAP)}"
-        )
+        raise KeyError(f"No stub client registered for '{name}'. Available: {sorted(_UNIFIED_MAP)}")
     return _UNIFIED_MAP[name]

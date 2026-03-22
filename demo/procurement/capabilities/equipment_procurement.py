@@ -36,8 +36,7 @@ class ServerError(Exception):
             "type": str,
             "example": "approved",
             "description": (
-                "Current procurement order status "
-                "(approved, pending_approval, over_budget)"
+                "Current procurement order status (approved, pending_approval, over_budget)"
             ),
         },
         "total_cost": {

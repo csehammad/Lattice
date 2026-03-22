@@ -42,8 +42,7 @@ class ServiceCluster:
     def client_factory(self, name: str, credentials: Any = None) -> Any:
         if name not in self._client_map:
             raise KeyError(
-                f"No service registered for '{name}'. "
-                f"Available: {sorted(self._client_map)}"
+                f"No service registered for '{name}'. Available: {sorted(self._client_map)}"
             )
         return self._client_map[name]
 

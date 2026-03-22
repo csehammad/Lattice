@@ -864,8 +864,10 @@ def _build_html_visualization(defn: Any) -> str:
         </div>"""
 
     # ── Capability signature ──────────────────────────────────────
-    input_items = [f"<span class='sig-param'>{n}: <em>{t.__name__}</em></span>"
-                   for n, t in defn.input_schema.items()]
+    input_items = [
+        f"<span class='sig-param'>{n}: <em>{t.__name__}</em></span>"
+        for n, t in defn.input_schema.items()
+    ]
     input_args = ",\n    ".join(input_items)
 
     proj_items = []

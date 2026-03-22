@@ -160,8 +160,5 @@ _CLIENT_MAP = {
 
 def client_factory(name: str, credentials=None):
     if name not in _CLIENT_MAP:
-        raise KeyError(
-            f"No stub client registered for '{name}'. "
-            f"Available: {sorted(_CLIENT_MAP)}"
-        )
+        raise KeyError(f"No stub client registered for '{name}'. Available: {sorted(_CLIENT_MAP)}")
     return _CLIENT_MAP[name]
