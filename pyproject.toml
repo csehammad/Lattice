@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lattice"
+name = "lattice-runtime"
 version = "0.1.0"
 description = "The capability runtime for outcome-based execution."
 readme = "README.md"
@@ -63,6 +63,9 @@ markers = [
     "unit: fast unit tests",
     "integration: full engine execution with in-memory services",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice"]
 
 [tool.ruff]
 target-version = "py39"
