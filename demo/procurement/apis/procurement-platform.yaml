@@ -1,0 +1,731 @@
+openapi: "3.0.3"
+info:
+  title: Enterprise Procurement Platform
+  version: "1.0.0"
+  description: >
+    Internal procurement platform exposing compliance, insurance, vendor
+    management, budget, approval, payment, and document services.
+
+servers:
+  - url: https://api.internal.company.com/v1
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    SanctionsRequest:
+      type: object
+      required: [entity_name, country]
+      properties:
+        entity_name:
+          type: string
+        country:
+          type: string
+
+    SanctionsResult:
+      type: object
+      properties:
+        clear:
+          type: boolean
+        risk_score:
+          type: integer
+        matched_lists:
+          type: array
+          items:
+            type: string
+
+    BatchSanctionsRequest:
+      type: object
+      required: [entities]
+      properties:
+        entities:
+          type: array
+          items:
+            $ref: "#/components/schemas/SanctionsRequest"
+
+    BatchSanctionsResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SanctionsResult"
+
+    ComplianceReport:
+      type: object
+      properties:
+        entity_id:
+          type: string
+        status:
+          type: string
+        last_checked:
+          type: string
+          format: date-time
+        issues:
+          type: array
+          items:
+            type: string
+
+    InsuranceVerifyRequest:
+      type: object
+      required: [entity_name]
+      properties:
+        entity_name:
+          type: string
+        policy_type:
+          type: string
+
+    InsuranceResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        expiry_date:
+          type: string
+          format: date
+        provider:
+          type: string
+        coverage_amount:
+          type: number
+
+    InsuranceCertificate:
+      type: object
+      properties:
+        certificate_id:
+          type: string
+        vendor_id:
+          type: string
+        provider:
+          type: string
+        valid_until:
+          type: string
+          format: date
+        document_url:
+          type: string
+
+    VendorCreate:
+      type: object
+      required: [name, type, region]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        region:
+          type: string
+        risk_score:
+          type: integer
+        insurance_status:
+          type: object
+
+    Vendor:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        region:
+          type: string
+        status:
+          type: string
+        default_terms:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    VendorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        region:
+          type: string
+        status:
+          type: string
+
+    VendorList:
+      type: object
+      properties:
+        vendors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vendor"
+        total:
+          type: integer
+
+    Budget:
+      type: object
+      properties:
+        department:
+          type: string
+        fiscal_year:
+          type: string
+        total:
+          type: number
+        allocated:
+          type: number
+        remaining:
+          type: number
+
+    BudgetCheckRequest:
+      type: object
+      required: [department, amount]
+      properties:
+        department:
+          type: string
+        amount:
+          type: number
+        category:
+          type: string
+
+    BudgetCheckResult:
+      type: object
+      properties:
+        approved:
+          type: boolean
+        remaining:
+          type: number
+        limit:
+          type: number
+
+    BudgetAllocateRequest:
+      type: object
+      required: [department, amount, purpose]
+      properties:
+        department:
+          type: string
+        amount:
+          type: number
+        purpose:
+          type: string
+        reference_id:
+          type: string
+
+    BudgetAllocation:
+      type: object
+      properties:
+        allocation_id:
+          type: string
+        department:
+          type: string
+        amount:
+          type: number
+        remaining_after:
+          type: number
+
+    ApprovalRequest:
+      type: object
+      required: [request_type, requester, details]
+      properties:
+        request_type:
+          type: string
+        requester:
+          type: string
+        details:
+          type: object
+        amount:
+          type: number
+
+    Approval:
+      type: object
+      properties:
+        request_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        approver:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+
+    PaymentTerms:
+      type: object
+      properties:
+        vendor_id:
+          type: string
+        terms:
+          type: string
+        currency:
+          type: string
+        discount_percent:
+          type: number
+
+    PaymentTermsUpdate:
+      type: object
+      required: [terms]
+      properties:
+        terms:
+          type: string
+        currency:
+          type: string
+        discount_percent:
+          type: number
+
+    DocumentRequest:
+      type: object
+      required: [vendor_id, document_types]
+      properties:
+        vendor_id:
+          type: string
+        document_types:
+          type: array
+          items:
+            type: string
+
+    DocumentRequestResult:
+      type: object
+      properties:
+        request_id:
+          type: string
+        vendor_id:
+          type: string
+        documents_pending:
+          type: array
+          items:
+            type: string
+        portal_link:
+          type: string
+
+paths:
+
+  # ── Compliance ──────────────────────────────────────────────────────
+
+  /compliance/sanctions/check:
+    post:
+      operationId: checkSanctions
+      tags: [Compliance]
+      summary: Screen an entity against global sanctions lists.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SanctionsRequest"
+      responses:
+        "200":
+          description: Sanctions screening result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SanctionsResult"
+
+  /compliance/sanctions/batch:
+    post:
+      operationId: batchSanctionsScreen
+      tags: [Compliance]
+      summary: Screen multiple entities against sanctions lists in one call.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchSanctionsRequest"
+      responses:
+        "200":
+          description: Batch sanctions results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchSanctionsResult"
+
+  /compliance/reports/{entityId}:
+    get:
+      operationId: getComplianceReport
+      tags: [Compliance]
+      summary: Retrieve the latest compliance report for an entity.
+      parameters:
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Compliance report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceReport"
+
+  # ── Insurance ───────────────────────────────────────────────────────
+
+  /insurance/verify:
+    post:
+      operationId: verifyInsurance
+      tags: [Insurance]
+      summary: Verify insurance coverage for an entity.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsuranceVerifyRequest"
+      responses:
+        "200":
+          description: Insurance verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsuranceResult"
+
+  /insurance/certificates/{vendorId}:
+    get:
+      operationId: getInsuranceCertificate
+      tags: [Insurance]
+      summary: Retrieve the current insurance certificate for a vendor.
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Insurance certificate details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsuranceCertificate"
+
+  # ── Vendor Management ──────────────────────────────────────────────
+
+  /vendors:
+    post:
+      operationId: createVendor
+      tags: [Vendors]
+      summary: Create a new vendor record in the ERP system.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorCreate"
+      responses:
+        "201":
+          description: Created vendor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+    get:
+      operationId: listVendors
+      tags: [Vendors]
+      summary: List all vendors, optionally filtered by region or type.
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendor list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorList"
+
+  /vendors/{vendorId}:
+    get:
+      operationId: getVendor
+      tags: [Vendors]
+      summary: Retrieve a single vendor by ID.
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendor details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+    put:
+      operationId: updateVendor
+      tags: [Vendors]
+      summary: Update an existing vendor record.
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorUpdate"
+      responses:
+        "200":
+          description: Updated vendor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /vendors/{vendorId}/deactivate:
+    post:
+      operationId: deactivateVendor
+      tags: [Vendors]
+      summary: Deactivate a vendor (soft delete).
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated vendor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  # ── Budget ─────────────────────────────────────────────────────────
+
+  /budgets/{department}:
+    get:
+      operationId: getBudget
+      tags: [Budget]
+      summary: Get current budget information for a department.
+      parameters:
+        - name: department
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fiscal_year
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Budget details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+
+  /budgets/check:
+    post:
+      operationId: checkBudgetLimit
+      tags: [Budget]
+      summary: Check whether a requested amount is within budget limits.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetCheckRequest"
+      responses:
+        "200":
+          description: Budget check result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetCheckResult"
+
+  /budgets/allocate:
+    post:
+      operationId: allocateBudget
+      tags: [Budget]
+      summary: Allocate budget for a specific purpose.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetAllocateRequest"
+      responses:
+        "200":
+          description: Budget allocation confirmation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetAllocation"
+
+  # ── Approvals ──────────────────────────────────────────────────────
+
+  /approvals:
+    post:
+      operationId: submitApproval
+      tags: [Approvals]
+      summary: Submit a new approval request.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalRequest"
+      responses:
+        "201":
+          description: Created approval request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+
+  /approvals/{requestId}:
+    get:
+      operationId: getApprovalStatus
+      tags: [Approvals]
+      summary: Check the status of an approval request.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approval status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+
+  /approvals/{requestId}/approve:
+    post:
+      operationId: approveRequest
+      tags: [Approvals]
+      summary: Approve a pending request.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated approval.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+
+  /approvals/{requestId}/reject:
+    post:
+      operationId: rejectRequest
+      tags: [Approvals]
+      summary: Reject a pending request.
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated approval.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+
+  # ── Payments ───────────────────────────────────────────────────────
+
+  /vendors/{vendorId}/payment-terms:
+    get:
+      operationId: getPaymentTerms
+      tags: [Payments]
+      summary: Get current payment terms for a vendor.
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment terms.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentTerms"
+
+    put:
+      operationId: setPaymentTerms
+      tags: [Payments]
+      summary: Set or update payment terms for a vendor.
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentTermsUpdate"
+      responses:
+        "200":
+          description: Updated payment terms.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentTerms"
+
+  # ── Documents ──────────────────────────────────────────────────────
+
+  /documents/request:
+    post:
+      operationId: requestDocuments
+      tags: [Documents]
+      summary: Request onboarding documents from a vendor.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentRequest"
+      responses:
+        "201":
+          description: Document request created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentRequestResult"

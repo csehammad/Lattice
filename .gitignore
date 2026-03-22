@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing & coverage
+.pytest_cache/
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*
+
+# Mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# PyInstaller
+*.spec.bak
+
+# Environment & secrets
+.env
+*.env
+api.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated artifacts
+*.html
+!demo/README.md
+!release/README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!SECURITY.md
+!CODE_OF_CONDUCT.md
+!README.md

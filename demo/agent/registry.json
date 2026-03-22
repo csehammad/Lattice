@@ -1,0 +1,138 @@
+{
+  "VendorOnboarding": {
+    "name": "VendorOnboarding",
+    "version": "1.0",
+    "inputs": {
+      "vendor_name": "str",
+      "vendor_type": "str",
+      "region": "str"
+    },
+    "projection": {
+      "vendor_id": {
+        "type": "str",
+        "example": "V-10001",
+        "description": "Unique vendor identifier assigned by the ERP system"
+      },
+      "status": {
+        "type": "str",
+        "example": "active",
+        "description": "Current vendor lifecycle status (active, pending, blocked)"
+      },
+      "compliance": {
+        "type": "str",
+        "example": "passed",
+        "description": "Overall compliance screening result"
+      },
+      "risk_score": {
+        "type": "int",
+        "example": 15,
+        "description": "Numeric risk score from sanctions screening (0-100, lower is better)"
+      },
+      "documents_pending": {
+        "type": "list",
+        "example": [
+          "W-9",
+          "insurance_certificate",
+          "bank_details"
+        ],
+        "description": "Documents the vendor still needs to submit before activation"
+      }
+    },
+    "signature": "VendorOnboarding(vendor_name, vendor_type, region) -> { vendor_id: str (e.g. 'V-10001'), status: str (e.g. 'active'), compliance: str (e.g. 'passed'), risk_score: int (e.g. 15), documents_pending: list (e.g. ['W-9', 'insurance_certificate', 'bank_details']) }",
+    "module_path": "demo.procurement.capabilities.vendor_onboarding",
+    "function_name": "vendor_onboarding"
+  },
+  "EquipmentProcurement": {
+    "name": "EquipmentProcurement",
+    "version": "1.0",
+    "inputs": {
+      "item": "str",
+      "quantity": "int",
+      "budget_department": "str",
+      "preferred_vendor_id": "str",
+      "requested_by": "str"
+    },
+    "projection": {
+      "order_status": {
+        "type": "str",
+        "example": "approved",
+        "description": "Current procurement order status (approved, pending_approval, over_budget)"
+      },
+      "total_cost": {
+        "type": "float",
+        "example": 2500.0,
+        "description": "Total cost of the procurement order in USD"
+      },
+      "vendor_name": {
+        "type": "str",
+        "example": "Acme Industrial Supply",
+        "description": "Name of the selected vendor fulfilling the order"
+      },
+      "approval_status": {
+        "type": "str",
+        "example": "approved",
+        "description": "Manager approval status (approved, pending, rejected)"
+      },
+      "budget_remaining": {
+        "type": "float",
+        "example": 47500.0,
+        "description": "Department budget remaining after this procurement"
+      }
+    },
+    "signature": "EquipmentProcurement(item, quantity, budget_department, preferred_vendor_id, requested_by) -> { order_status: str (e.g. 'approved'), total_cost: float (e.g. 2500.0), vendor_name: str (e.g. 'Acme Industrial Supply'), approval_status: str (e.g. 'approved'), budget_remaining: float (e.g. 47500.0) }",
+    "module_path": "demo.procurement.capabilities.equipment_procurement",
+    "function_name": "equipment_procurement"
+  },
+  "TripPlanning": {
+    "name": "TripPlanning",
+    "version": "1.0",
+    "inputs": {
+      "traveler_email": "str",
+      "origin": "str",
+      "destination": "str",
+      "departure_date": "str",
+      "return_date": "str",
+      "department": "str"
+    },
+    "projection": {
+      "status": {
+        "type": "str",
+        "example": "booked",
+        "description": "Trip status (booked, approved_pending_booking, blocked)"
+      },
+      "flight_confirmation": {
+        "type": "str",
+        "example": "BK-482910",
+        "description": "Flight booking confirmation code"
+      },
+      "hotel_confirmation": {
+        "type": "str",
+        "example": "HBK-193847",
+        "description": "Hotel booking confirmation code"
+      },
+      "total_cost": {
+        "type": "float",
+        "example": 1278.0,
+        "description": "Total trip cost (flight + hotel) in USD"
+      },
+      "policy_status": {
+        "type": "str",
+        "example": "compliant",
+        "description": "Travel policy compliance status"
+      },
+      "budget_remaining": {
+        "type": "float",
+        "example": 6722.0,
+        "description": "Department travel budget remaining after this trip"
+      },
+      "loyalty_tier": {
+        "type": "str",
+        "example": "gold",
+        "description": "Traveler's loyalty program tier"
+      }
+    },
+    "signature": "TripPlanning(traveler_email, origin, destination, departure_date, return_date, department) -> { status: str (e.g. 'booked'), flight_confirmation: str (e.g. 'BK-482910'), hotel_confirmation: str (e.g. 'HBK-193847'), total_cost: float (e.g. 1278.0), policy_status: str (e.g. 'compliant'), budget_remaining: float (e.g. 6722.0), loyalty_tier: str (e.g. 'gold') }",
+    "module_path": "demo.travel.capabilities.trip_planning",
+    "function_name": "trip_planning"
+  }
+}
