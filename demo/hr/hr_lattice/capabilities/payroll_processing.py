@@ -14,10 +14,10 @@ API endpoints exercised:
   GET  /payroll/runs/{run_id}
 """
 
+from hr_lattice.resolution import resolve_department
+
 from lattice import capability, projection, state, step
 from lattice.failure import abort, hard_failure, retry
-
-from hr_lattice.resolution import resolve_department
 
 
 @capability(

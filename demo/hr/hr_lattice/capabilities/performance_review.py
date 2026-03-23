@@ -11,10 +11,10 @@ API endpoints exercised:
   POST /performance/reviews
 """
 
+from hr_lattice.resolution import resolve_employee
+
 from lattice import capability, projection, state, step
 from lattice.failure import abort, hard_failure, retry, soft_failure
-
-from hr_lattice.resolution import resolve_employee
 
 
 @capability(
@@ -40,7 +40,7 @@ from hr_lattice.resolution import resolve_employee
         "rating": {
             "type": int,
             "example": 4,
-            "description": "Submitted rating (1–5 scale)",
+            "description": "Submitted rating (1-5 scale)",
         },
         "status": {
             "type": str,

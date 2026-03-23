@@ -9,7 +9,6 @@ self-contained with no database dependency.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -166,21 +165,21 @@ class CreateEmployeeRequest(BaseModel):
     email: str
     department_id: str
     position_id: str
-    manager_id: Optional[str] = None
+    manager_id: str | None = None
 
 
 class UpdateEmployeeRequest(BaseModel):
-    department_id: Optional[str] = None
-    position_id: Optional[str] = None
-    status: Optional[str] = None
-    manager_id: Optional[str] = None
+    department_id: str | None = None
+    position_id: str | None = None
+    status: str | None = None
+    manager_id: str | None = None
 
 
 class UpdatePayrollRequest(BaseModel):
     salary: float
     currency: str = "USD"
     pay_frequency: str = "biweekly"
-    bank_account: Optional[str] = None
+    bank_account: str | None = None
 
 
 class PayrollRunRequest(BaseModel):
@@ -206,7 +205,7 @@ class LeaveRequestBody(BaseModel):
 class LeaveDecision(BaseModel):
     decision: str
     decided_by: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class BenefitEnrollment(BaseModel):
@@ -228,7 +227,7 @@ def health():
 # ── Employees (5) ──────────────────────────────────────────────────────────
 
 @app.get("/employees")
-def list_employees(department_id: Optional[str] = None, status: Optional[str] = None):
+def list_employees(department_id: str | None = None, status: str | None = None):
     result = list(EMPLOYEES.values())
     if department_id:
         result = [e for e in result if e["department_id"] == department_id]

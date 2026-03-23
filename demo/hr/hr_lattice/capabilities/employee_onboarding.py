@@ -16,10 +16,10 @@ API endpoints exercised:
   POST /onboarding
 """
 
+from hr_lattice.resolution import resolve_department, resolve_position, split_full_name
+
 from lattice import capability, projection, state, step
 from lattice.failure import abort, hard_failure, retry
-
-from hr_lattice.resolution import resolve_department, resolve_position, split_full_name
 
 
 @capability(

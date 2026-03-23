@@ -8,6 +8,8 @@ the corresponding stub instances.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 
 class _Obj:
     """Tiny helper to build objects with attribute access from kwargs."""
@@ -71,7 +73,7 @@ class BudgetClient:
 
 
 class VendorClient:
-    _vendors = [
+    _vendors: ClassVar[list[dict[str, str]]] = [
         {
             "id": "V-10001",
             "name": "Acme Industrial Supply",
