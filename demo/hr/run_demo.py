@@ -102,6 +102,7 @@ Workflow for every user request:
 
 # ── Registry ───────────────────────────────────────────────────────────────
 
+
 def build_registry() -> LazyRegistry:
     eager = CapabilityRegistry()
     eager.register(employee_onboarding)
@@ -112,6 +113,7 @@ def build_registry() -> LazyRegistry:
 
 
 # ── Agent ──────────────────────────────────────────────────────────────────
+
 
 class HRAgent:
     """OpenAI function-calling agent backed by Lattice HR capabilities."""
@@ -125,6 +127,7 @@ class HRAgent:
 
     def _client(self):
         import openai
+
         return openai.OpenAI()
 
     async def send(self, user_message: str) -> str:
@@ -157,11 +160,13 @@ class HRAgent:
                 result = await self._dispatch(tc.function.name, args)
                 self._print_tool_turn(tc.function.name, args, result)
 
-                self._messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": json.dumps(result, default=str),
-                })
+                self._messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(result, default=str),
+                    }
+                )
 
         return "(agent reached max tool-call rounds without a text reply)"
 
@@ -261,6 +266,7 @@ async def run_interactive(agent: HRAgent) -> None:
 
 # ── Infrastructure ─────────────────────────────────────────────────────────
 
+
 def wait_for_api(url: str, timeout: int = 30) -> None:
     console.print(f"[dim]Waiting for HR API at {url} ...[/dim]")
     deadline = time.time() + timeout
@@ -276,6 +282,7 @@ def wait_for_api(url: str, timeout: int = 30) -> None:
 
 
 # ── Entry point ────────────────────────────────────────────────────────────
+
 
 async def main() -> None:
     api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -313,8 +320,7 @@ async def main() -> None:
     total = len(engine.audit_trail.records)
     loaded = len(lazy._loaded)
     console.print(
-        f"[dim]{total} capability execution(s). "
-        f"{loaded}/{n} module(s) loaded on demand.[/dim]"
+        f"[dim]{total} capability execution(s). {loaded}/{n} module(s) loaded on demand.[/dim]"
     )
 
 

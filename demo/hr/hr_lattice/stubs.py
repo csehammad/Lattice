@@ -33,8 +33,5 @@ _CLIENTS: dict = {
 
 def client_factory(name: str, credentials=None):
     if name not in _CLIENTS:
-        raise KeyError(
-            f"No client registered for '{name}'. "
-            f"Available: {sorted(_CLIENTS)}"
-        )
+        raise KeyError(f"No client registered for '{name}'. Available: {sorted(_CLIENTS)}")
     return _CLIENTS[name]

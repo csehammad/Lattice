@@ -159,6 +159,7 @@ def _next_id(prefix: str, key: str) -> str:
 
 # ── Request / response models ──────────────────────────────────────────────
 
+
 class CreateEmployeeRequest(BaseModel):
     first_name: str
     last_name: str
@@ -219,12 +220,14 @@ class OnboardingRequest(BaseModel):
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
 # ── Employees (5) ──────────────────────────────────────────────────────────
+
 
 @app.get("/employees")
 def list_employees(department_id: str | None = None, status: str | None = None):
@@ -295,6 +298,7 @@ def get_employee_profile(employee_id: str):
 
 # ── Departments (3) ────────────────────────────────────────────────────────
 
+
 @app.get("/departments")
 def list_departments():
     return {"departments": list(DEPARTMENTS.values())}
@@ -312,8 +316,7 @@ def get_headcount(dept_id: str):
     if dept_id not in DEPARTMENTS:
         raise HTTPException(404, f"Department {dept_id} not found")
     employees = [
-        e for e in EMPLOYEES.values()
-        if e["department_id"] == dept_id and e["status"] == "active"
+        e for e in EMPLOYEES.values() if e["department_id"] == dept_id and e["status"] == "active"
     ]
     return {
         "department_id": dept_id,
@@ -323,6 +326,7 @@ def get_headcount(dept_id: str):
 
 
 # ── Positions (2) ──────────────────────────────────────────────────────────
+
 
 @app.get("/positions")
 def list_positions():
@@ -337,6 +341,7 @@ def get_position(position_id: str):
 
 
 # ── Onboarding (2) ─────────────────────────────────────────────────────────
+
 
 @app.post("/onboarding", status_code=201)
 def start_onboarding(body: OnboardingRequest):
@@ -369,6 +374,7 @@ def get_onboarding_status(employee_id: str):
 
 # ── Payroll (4) ────────────────────────────────────────────────────────────
 
+
 @app.get("/payroll/{employee_id}")
 def get_payroll(employee_id: str):
     if employee_id not in EMPLOYEES:
@@ -399,13 +405,11 @@ def run_payroll(body: PayrollRunRequest):
     if body.department_id not in DEPARTMENTS:
         raise HTTPException(400, f"Department {body.department_id} not found")
     active = [
-        e for e in EMPLOYEES.values()
+        e
+        for e in EMPLOYEES.values()
         if e["department_id"] == body.department_id and e["status"] == "active"
     ]
-    total = sum(
-        PAYROLL.get(e["id"], {}).get("salary", 0) / 26
-        for e in active
-    )
+    total = sum(PAYROLL.get(e["id"], {}).get("salary", 0) / 26 for e in active)
     run_id = _next_id("PR", "run")
     run = {
         "run_id": run_id,
@@ -438,6 +442,7 @@ def get_payroll_run(run_id: str):
 
 # ── Performance reviews (2) ────────────────────────────────────────────────
 
+
 @app.post("/performance/reviews", status_code=201)
 def create_review(body: CreateReviewRequest):
     if body.employee_id not in EMPLOYEES:
@@ -469,6 +474,7 @@ def get_reviews(employee_id: str):
 
 
 # ── Leave requests (2) ─────────────────────────────────────────────────────
+
 
 @app.post("/leave/requests", status_code=201)
 def create_leave_request(body: LeaveRequestBody):
