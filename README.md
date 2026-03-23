@@ -735,6 +735,10 @@ The full demo suite now lives under [`demo/`](demo/README.md):
 - [`demo/travel/`](demo/travel/README.md)
 - [`demo/hr/`](demo/hr/README.md)
 
+Demo walkthrough:
+
+![Lattice interactive demo walkthrough](assets/img/lattice-demo-captioned.gif)
+
 Example session:
 
 ```text
