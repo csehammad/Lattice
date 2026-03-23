@@ -885,6 +885,5 @@ Early-stage design and specification. Current implementation work focuses on pro
 
 - [Covenant Layer](https://github.com/csehammad/covenant-layer) — open protocol for outcome-based coordination across trust boundaries
 - [What Pulling Espresso Taught Me About Building Enterprise AI Agents](https://levelup.gitconnected.com/what-pulling-espresso-taught-me-about-building-enterprise-ai-agents) — why capability design is the "grind size" that determines extraction quality in AI agent systems
-- [Why Treating MCP Tools Like Agents Is an Architectural Anti-Pattern](https://levelup.gitconnected.com/why-treating-mcp-tools-like-agents-is-an-architectural-anti-pattern) — how hidden agent logic inside tools breaks separation of concerns, auditability, and security
 - [The Future of Agents Is Outcome Coordination](https://levelup.gitconnected.com/the-future-of-agents-is-outcome-coordination-09807612ca2d) — the architectural thesis behind Covenant Layer
 - [The Future of Agents Is Outcome Coordination, Part II](https://medium.com/@hammadulhaq/the-future-of-agents-is-outcome-coordination-part-ii-dc251091c294) — deeper technical treatment
