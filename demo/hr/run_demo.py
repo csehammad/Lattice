@@ -29,6 +29,19 @@ import sys
 import time
 from pathlib import Path
 
+import httpx
+from hr_lattice.capabilities.employee_onboarding import employee_onboarding
+from hr_lattice.capabilities.payroll_processing import payroll_processing
+from hr_lattice.capabilities.performance_review import performance_review
+from hr_lattice.stubs import HR_API_URL, client_factory
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+from lattice.auth.scopes import CredentialStore
+from lattice.runtime.engine import Engine
+from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
@@ -48,19 +61,6 @@ def _load_env_file(path: Path) -> None:
 
 
 _load_env_file(Path(__file__).parent / "api.env")
-
-import httpx
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-
-from hr_lattice.capabilities.employee_onboarding import employee_onboarding
-from hr_lattice.capabilities.payroll_processing import payroll_processing
-from hr_lattice.capabilities.performance_review import performance_review
-from hr_lattice.stubs import HR_API_URL, client_factory
-from lattice.auth.scopes import CredentialStore
-from lattice.runtime.engine import Engine
-from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
 
 console = Console()
 

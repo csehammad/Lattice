@@ -92,7 +92,10 @@ async def equipment_procurement(ctx):
         client = ctx.client("vendor_api")
         preferred_vendor = _normalize(ctx.intent.preferred_vendor)
         for vendor in await client.list_vendors():
-            if _normalize(vendor.id) == preferred_vendor or _normalize(vendor.name) == preferred_vendor:
+            if (
+                _normalize(vendor.id) == preferred_vendor
+                or _normalize(vendor.name) == preferred_vendor
+            ):
                 return {
                     "vendor_id": vendor.id,
                     "vendor_name": vendor.name,
