@@ -10,6 +10,10 @@
 The capability runtime for outcome-based execution.
 Enables AI agents to take structured, auditable actions.
 
+Demo walkthrough:
+
+![Lattice interactive demo walkthrough](assets/img/lattice-demo-captioned.gif)
+
 Models should request outcomes, not call raw tools directly. Lattice handles sequencing, state, permissions, failure policy, and audit, then returns a projection the model can reason over.
 
 This work builds on [Covenant Layer](https://github.com/csehammad/covenant-layer), an open protocol for outcome-based coordination across trust boundaries. Lattice focuses on execution inside one system. Covenant Layer focuses on coordination across systems.
@@ -734,10 +738,6 @@ The full demo suite now lives under [`demo/`](demo/README.md):
 - [`demo/procurement/`](demo/procurement/README.md)
 - [`demo/travel/`](demo/travel/README.md)
 - [`demo/hr/`](demo/hr/README.md)
-
-Demo walkthrough:
-
-![Lattice interactive demo walkthrough](assets/img/lattice-demo-captioned.gif)
 
 Example session:
 
