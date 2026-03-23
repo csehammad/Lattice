@@ -49,7 +49,7 @@
       "item": "str",
       "quantity": "int",
       "budget_department": "str",
-      "preferred_vendor_id": "str",
+      "preferred_vendor": "str",
       "requested_by": "str"
     },
     "projection": {
@@ -79,7 +79,7 @@
         "description": "Department budget remaining after this procurement"
       }
     },
-    "signature": "EquipmentProcurement(item, quantity, budget_department, preferred_vendor_id, requested_by) -> { order_status: str (e.g. 'approved'), total_cost: float (e.g. 2500.0), vendor_name: str (e.g. 'Acme Industrial Supply'), approval_status: str (e.g. 'approved'), budget_remaining: float (e.g. 47500.0) }",
+    "signature": "EquipmentProcurement(item, quantity, budget_department, preferred_vendor, requested_by) -> { order_status: str (e.g. 'approved'), total_cost: float (e.g. 2500.0), vendor_name: str (e.g. 'Acme Industrial Supply'), approval_status: str (e.g. 'approved'), budget_remaining: float (e.g. 47500.0) }",
     "module_path": "demo.procurement.capabilities.equipment_procurement",
     "function_name": "equipment_procurement"
   },

@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""Lattice demo — full engine execution with rich console output.
+"""Lattice demo — real interactive Search-then-Execute demo.
 
-Runs all reference capabilities (VendorOnboarding, EquipmentProcurement,
-TripPlanning) through the Lattice runtime with stub clients, then prints
-the projection results and audit trail.
+This is the user-facing Procurement + Travel demo entrypoint.
+It uses an OpenAI-backed agent with the two Lattice meta-tools:
+  search_capabilities
+  execute_capability
 
 Usage:
-    python -m demo.run_demo          (from the project root)
-    python demo/run_demo.py          (from the project root)
+    python -m demo.run_demo
+    python demo/run_demo.py
+
+Optional:
+    python -m demo.run_demo --model gpt-5.4-mini
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
-import json
+import os
 import sys
 from pathlib import Path
 
@@ -23,174 +28,125 @@ from rich.table import Table
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from demo.agent.agent import LatticeAgent
 from demo.procurement.capabilities.equipment_procurement import equipment_procurement
 from demo.procurement.capabilities.vendor_onboarding import vendor_onboarding
 from demo.stubs import client_factory
 from demo.travel.capabilities.trip_planning import trip_planning
-from lattice.auth.scopes import CredentialStore
 from lattice.runtime.engine import Engine
+from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
 
 console = Console()
+MANIFEST_PATH = Path(__file__).resolve().parent / "agent" / "registry.json"
 
 
-def print_projection(name: str, result: dict) -> None:
-    console.print(
-        Panel(
-            json.dumps(result, indent=2, default=str),
-            title=f"[bold green]{name} — Projection[/bold green]",
-            border_style="green",
-        )
-    )
+def _load_api_env() -> None:
+    api_env = Path(__file__).resolve().parent.parent / "api.env"
+    if not api_env.exists():
+        return
+    for line in api_env.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            key, val = line.split("=", 1)
+            os.environ.setdefault(key.strip(), val.strip())
+        else:
+            os.environ.setdefault("OPENAI_API_KEY", line)
 
 
-def print_audit(engine: Engine) -> None:
-    record = engine.audit_trail.records[-1]
-
-    table = Table(
-        title=f"Audit Trail — {record.capability_name} v{record.capability_version}",
-        show_lines=True,
-    )
-    table.add_column("Field", style="bold")
-    table.add_column("Value")
-
-    table.add_row("Execution ID", record.execution_id)
-    table.add_row("Requester", record.requester)
-    table.add_row(
-        "Status",
-        f"[green]{record.status}[/green]" if record.status == "completed" else record.status,
-    )
-    table.add_row("Duration", f"{record.duration_ms:.0f} ms")
-    table.add_row("Scopes", ", ".join(record.granted_scopes))
-    console.print(table)
-
-    steps_table = Table(title="Steps", show_lines=True)
-    steps_table.add_column("Step")
-    steps_table.add_column("Status")
-    steps_table.add_column("Attempts")
-    steps_table.add_column("Scope")
-    steps_table.add_column("Duration (ms)")
-
-    for s in record.steps:
-        status_str = f"[green]{s.status}[/green]" if s.status == "completed" else s.status
-        steps_table.add_row(
-            s.step_name,
-            status_str,
-            str(s.attempts),
-            s.scope or "",
-            f"{s.duration_ms:.1f}" if s.duration_ms else "-",
-        )
-    console.print(steps_table)
+def build_manifest() -> Path:
+    eager = CapabilityRegistry()
+    eager.register(vendor_onboarding)
+    eager.register(equipment_procurement)
+    eager.register(trip_planning)
+    eager.save(MANIFEST_PATH)
+    return MANIFEST_PATH
 
 
-async def run_vendor_onboarding(engine: Engine) -> None:
-    console.rule("[bold blue]VendorOnboarding (Procurement)[/bold blue]")
-
-    creds = CredentialStore(
-        granted_scopes={"compliance.read", "vendor.write"},
-    )
-
-    result = await engine.execute(
-        vendor_onboarding,
-        inputs={
-            "vendor_name": "Acme Corp",
-            "vendor_type": "supplier",
-            "region": "US",
-        },
-        credentials=creds,
+def build_agent(model: str) -> LatticeAgent:
+    manifest_path = build_manifest()
+    lazy = LazyRegistry.from_manifest(manifest_path)
+    engine = Engine()
+    return LatticeAgent(
+        lazy_registry=lazy,
+        engine=engine,
         client_factory=client_factory,
-        requester="demo-runner",
+        openai_model=model,
     )
 
-    print_projection("VendorOnboarding", result)
-    print_audit(engine)
+
+def print_audit_compact(agent: LatticeAgent) -> None:
+    record = agent.last_audit
+    if record is None:
+        return
+
+    table = Table(show_header=False, box=None, padding=(0, 1))
+    table.add_column(style="dim")
+    table.add_column()
+
+    table.add_row("Capability", f"{record.capability_name} v{record.capability_version}")
+    table.add_row("Status", f"[green]{record.status}[/green]")
+    table.add_row("Steps", str(len(record.steps)))
+    table.add_row("Duration", f"{record.duration_ms:.0f}ms")
+    table.add_row("Loaded on demand", "[cyan]yes[/cyan]")
+    table.add_row("Execution ID", f"[dim]{record.execution_id}[/dim]")
+
+    console.print(Panel(table, title="[dim]Lattice Execution[/dim]", border_style="dim"))
 
 
-async def run_equipment_procurement(engine: Engine) -> None:
-    console.rule("[bold blue]EquipmentProcurement (Procurement)[/bold blue]")
-
-    creds = CredentialStore(
-        granted_scopes={
-            "budget.read",
-            "budget.write",
-            "vendor.read",
-            "approval.read",
-            "approval.write",
-        },
-    )
-
-    result = await engine.execute(
-        equipment_procurement,
-        inputs={
-            "item": "Standing Desk",
-            "quantity": 10,
-            "budget_department": "engineering",
-            "preferred_vendor_id": "V-10001",
-            "requested_by": "alex.johnson@company.com",
-        },
-        credentials=creds,
-        client_factory=client_factory,
-        requester="demo-runner",
-    )
-
-    print_projection("EquipmentProcurement", result)
-    print_audit(engine)
-
-
-async def run_trip_planning(engine: Engine) -> None:
-    console.rule("[bold blue]TripPlanning (Travel)[/bold blue]")
-
-    creds = CredentialStore(
-        granted_scopes={
-            "travel.read",
-            "travel.approve",
-            "travel.book",
-            "budget.write",
-        },
-    )
-
-    result = await engine.execute(
-        trip_planning,
-        inputs={
-            "traveler_email": "jane.doe@company.com",
-            "origin": "SFO",
-            "destination": "NYC",
-            "departure_date": "2026-04-15",
-            "return_date": "2026-04-17",
-            "department": "engineering",
-        },
-        credentials=creds,
-        client_factory=client_factory,
-        requester="demo-runner",
-    )
-
-    print_projection("TripPlanning", result)
-    print_audit(engine)
+async def run_interactive(agent: LatticeAgent) -> None:
+    prev_audit_count = len(agent.engine.audit_trail.records)
+    console.print("[dim]Interactive mode. Type your request. 'quit' to exit.[/dim]\n")
+    while True:
+        try:
+            user_input = console.input("[bold green]You:[/bold green] ")
+        except (EOFError, KeyboardInterrupt):
+            console.print("\n[dim]Goodbye.[/dim]")
+            break
+        if user_input.strip().lower() in ("quit", "exit", "q"):
+            console.print("[dim]Goodbye.[/dim]")
+            break
+        if not user_input.strip():
+            continue
+        try:
+            with console.status("[dim]Agent thinking...[/dim]"):
+                reply = await agent.handle_message(user_input)
+            current_audit_count = len(agent.engine.audit_trail.records)
+            if current_audit_count > prev_audit_count:
+                print_audit_compact(agent)
+                prev_audit_count = current_audit_count
+            console.print(f"\n[bold blue]Agent:[/bold blue] {reply}\n")
+        except Exception as exc:
+            console.print(f"[red]Error: {exc}[/red]\n")
 
 
 async def main() -> None:
+    parser = argparse.ArgumentParser(description="Run the real Lattice demo.")
+    parser.add_argument("--model", default="gpt-4o", help="OpenAI model name.")
+    args = parser.parse_args()
+
+    _load_api_env()
+    if not os.environ.get("OPENAI_API_KEY"):
+        console.print("[red]OPENAI_API_KEY not set. Set it or add it to api.env[/red]")
+        sys.exit(1)
+
+    agent = build_agent(args.model)
+    n_capabilities = len(agent.lazy_registry.manifest)
     console.print(
         Panel(
-            "[bold]Lattice Demo[/bold] — End-to-end runtime execution\n"
-            "Running all reference capabilities with stub API clients.\n\n"
-            "[dim]Domains: Procurement, Travel[/dim]",
+            "[bold]Lattice Demo[/bold] — Real Search-then-Execute demo\n\n"
+            "The agent has TWO tools:\n"
+            "  [cyan]search_capabilities[/cyan] — discover what's available\n"
+            "  [cyan]execute_capability[/cyan]  — run a capability by name\n\n"
+            f"Registry: {n_capabilities} capabilities in manifest "
+            f"(0 loaded at startup)\n\n"
+            "[dim]Domains: Procurement, Travel[/dim]\n"
+            f"[dim]Model: {args.model}[/dim]",
             border_style="blue",
         )
     )
-
-    engine = Engine()
-
-    await run_vendor_onboarding(engine)
-    console.print()
-    await run_equipment_procurement(engine)
-    console.print()
-    await run_trip_planning(engine)
-
-    console.print()
-    console.rule("[bold green]Demo complete[/bold green]")
-    console.print(
-        f"[dim]Total executions: {len(engine.audit_trail.records)}, "
-        f"all completed successfully.[/dim]"
-    )
+    await run_interactive(agent)
 
 
 if __name__ == "__main__":

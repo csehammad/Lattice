@@ -1,0 +1,27 @@
+services:
+  hr-api:
+    build: .
+    command: uvicorn hr_api.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  hr-agent:
+    build: .
+    command: python run_demo.py
+    stdin_open: true
+    tty: true
+    env_file: api.env
+    environment:
+      - HR_API_URL=http://hr-api:8000
+    depends_on:
+      hr-api:
+        condition: service_healthy

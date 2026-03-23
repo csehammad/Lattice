@@ -21,6 +21,10 @@ class ServerError(Exception):
     pass
 
 
+def _normalize(value: str) -> str:
+    return " ".join(value.strip().casefold().split())
+
+
 @capability(
     name="EquipmentProcurement",
     version="1.0",
@@ -28,7 +32,7 @@ class ServerError(Exception):
         "item": str,
         "quantity": int,
         "budget_department": str,
-        "preferred_vendor_id": str,
+        "preferred_vendor": str,
         "requested_by": str,
     },
     projection={
@@ -86,12 +90,15 @@ async def equipment_procurement(ctx):
     )
     async def find_vendor():
         client = ctx.client("vendor_api")
-        vendor = await client.get_vendor(vendor_id=ctx.intent.preferred_vendor_id)
-        return {
-            "vendor_id": vendor.id,
-            "vendor_name": vendor.name,
-            "vendor_status": vendor.status,
-        }
+        preferred_vendor = _normalize(ctx.intent.preferred_vendor)
+        for vendor in await client.list_vendors():
+            if _normalize(vendor.id) == preferred_vendor or _normalize(vendor.name) == preferred_vendor:
+                return {
+                    "vendor_id": vendor.id,
+                    "vendor_name": vendor.name,
+                    "vendor_status": vendor.status,
+                }
+        raise ValueError(f"Vendor '{ctx.intent.preferred_vendor}' not found")
 
     @step(depends_on=[check_budget, find_vendor], scope="approval.write")
     @retry(max=2, on=[TimeoutError, ServerError])

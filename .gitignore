@@ -48,6 +48,9 @@ Thumbs.db
 
 # Generated artifacts
 *.html
+demo/html/
+!demo/*/visualizations/
+!demo/*/visualizations/*.html
 !demo/README.md
 !release/README.md
 !CONTRIBUTING.md

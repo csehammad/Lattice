@@ -1,138 +1,88 @@
-# Lattice Demo
+# Lattice Demos
 
-End-to-end demonstration of the Lattice capability runtime across two domains: **Procurement** and **Travel**.
+This folder is the entrypoint for all runnable demos in the repository.
 
----
+Each domain folder is self-contained:
+- it has its own `README.md`
+- it keeps its own visualizations under `visualizations/`
+- it explains how to run that demo without guessing
 
-## Case studies
+## What's Here
 
-### Procurement
-
-| Capability | Steps | What it does |
+| Folder | What it contains | Start here |
 |---|---|---|
-| VendorOnboarding | 5 | Sanctions check, insurance verification, ERP record creation, payment terms, document collection |
-| EquipmentProcurement | 5 | Budget check, vendor lookup, approval, budget allocation, approval tracking |
+| `demo/procurement/` | Procurement capabilities, stubs, generated example, OpenAPI spec, HTML visualizations | [`demo/procurement/README.md`](demo/procurement/README.md) |
+| `demo/travel/` | Travel capability, stubs, HTML visualizations | [`demo/travel/README.md`](demo/travel/README.md) |
+| `demo/hr/` | HR API, HR capabilities, Docker demo, HTML visualizations | [`demo/hr/README.md`](demo/hr/README.md) |
+| `demo/agent/` | Shared search-then-execute agent infrastructure for the Procurement/Travel demo | [`demo/agent/run_agent.py`](demo/agent/run_agent.py) |
 
-### Travel
+## Suggested Path
 
-| Capability | Steps | What it does |
-|---|---|---|
-| TripPlanning | 8 | Flight search, hotel search, loyalty lookup, policy check, approval, budget allocation, flight booking, hotel booking |
+### 1. Browse a domain
 
----
+Open one of:
+- [`demo/procurement/README.md`](demo/procurement/README.md)
+- [`demo/travel/README.md`](demo/travel/README.md)
+- [`demo/hr/README.md`](demo/hr/README.md)
 
-## Folder structure
+Each one explains:
+- what is inside
+- how to run it
+- where the HTML visualizations live
 
-```
-demo/
-  procurement/
-    apis/
-      procurement-platform.yaml     OpenAPI 3.0 spec — 20 endpoints
-    capabilities/
-      vendor_onboarding.py          VendorOnboarding capability
-      equipment_procurement.py      EquipmentProcurement capability
-    generated/
-      vendor_onboarding.py          LLM-generated capability
-    stubs.py                        Procurement domain stub clients
-  travel/
-    capabilities/
-      trip_planning.py              TripPlanning capability
-    stubs.py                        Travel domain stub clients
-  agent/
-    agent.py                        LatticeAgent (search-then-execute)
-    run_agent.py                    Interactive agent CLI
-    registry.json                   Auto-generated capability manifest
-  stubs.py                          Unified stub factory (all domains)
-  run_demo.py                       Python runner (all capabilities)
-  run_demo.sh                       Shell script (full CLI pipeline)
-```
-
----
-
-## Quick start
-
-### Runtime execution (no LLM needed)
+### 2. Run the real interactive Procurement + Travel demo
 
 ```bash
 python -m demo.run_demo
 ```
 
-Runs all 3 capabilities through the Lattice engine with stub clients. Shows projections and audit trails.
+This is the main typed-input demo entrypoint. You type a real request, the LLM searches the capability registry, executes the right capability, and shows the execution summary.
 
-### Interactive agent (requires OpenAI API key)
+Try:
+- `Onboard Acme Corp as a supplier in the US`
+- `Procure 10 monitors for marketing from Acme Industrial Supply`
+- `Book a trip from SFO to NYC on April 15, returning April 17, for jane.doe@company.com in engineering`
+
+### 3. Run the shared agent demo
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 python -m demo.agent.run_agent
 ```
 
-The agent uses the **search-then-execute** pattern — two meta-tools instead of N capability tools. Try:
+Try:
+- `Onboard Acme Corp as a supplier in the US`
+- `Procure 10 monitors for marketing from Acme Industrial Supply`
+- `Book a trip from SFO to NYC on April 15, returning April 17, for jane.doe@company.com in engineering`
 
-- "Onboard Acme Corp as a supplier in the US"
-- "Procure 10 monitors for marketing from vendor V-10001"
-- "Book a trip from SFO to NYC on April 15, returning April 17, for jane.doe@company.com in engineering"
-
-### Full CLI pipeline (requires LLM API key)
+### 4. Run the full Procurement + Travel CLI pipeline
 
 ```bash
 bash demo/run_demo.sh
 ```
 
-Runs discover, match, generate, visualize, validate, register, run, and the Python runner.
+This regenerates the Procurement and Travel visualizations into:
+- `demo/procurement/visualizations/`
+- `demo/travel/visualizations/`
 
----
+It does not launch the live demo automatically. Run `python -m demo.run_demo` yourself afterward.
 
-## Prerequisites
+## Folder Layout
 
-```bash
-# From the project root
-pip install -e ".[llm]"
+```text
+demo/
+  README.md
+  agent/                 Shared search-then-execute agent layer
+  procurement/           Procurement domain demo
+  travel/                Travel domain demo
+  hr/                    HR domain demo
+  stubs.py               Unified stub factory for Procurement + Travel
+  run_demo.py            Real interactive Procurement + Travel demo
+  run_demo.sh            Combined Procurement + Travel CLI pipeline
 ```
 
-Set one of the following environment variables for LLM-powered steps:
+## Notes
 
-```bash
-export OPENAI_API_KEY="sk-..."
-# or
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-All other commands work without an API key.
-
----
-
-## Reference capabilities
-
-### VendorOnboarding (Procurement)
-
-```
-sanctions_check  ──┐
-                   ├── create_vendor_record ──┬── set_payment_terms
-insurance_verification ┘                      └── request_documents
-```
-
-**Inputs:** `vendor_name`, `vendor_type`, `region`
-**Projection:** `vendor_id`, `status`, `compliance`, `risk_score`, `documents_pending`
-
-### EquipmentProcurement (Procurement)
-
-```
-check_budget ──┐
-               ├── submit_for_approval ──┬── allocate_budget
-find_vendor ───┘                         └── track_approval
-```
-
-**Inputs:** `item`, `quantity`, `budget_department`, `preferred_vendor_id`, `requested_by`
-**Projection:** `order_status`, `total_cost`, `vendor_name`, `approval_status`, `budget_remaining`
-
-### TripPlanning (Travel)
-
-```
-search_flights ──┐
-                 ├── check_policy ── request_approval ── allocate_budget ──┬── book_flight
-search_hotels  ──┘                                                        └── book_hotel
-lookup_loyalty (parallel, independent)
-```
-
-**Inputs:** `traveler_email`, `origin`, `destination`, `departure_date`, `return_date`, `department`
-**Projection:** `status`, `flight_confirmation`, `hotel_confirmation`, `total_cost`, `policy_status`, `budget_remaining`, `loyalty_tier`
+- `demo/agent/` is shared infrastructure, not a separate business domain.
+- `demo/hr/` is intentionally self-contained because it includes a real FastAPI service plus Docker orchestration.
+- Old shared HTML output is no longer the recommended entrypoint. Use each domain's own `visualizations/` folder instead.

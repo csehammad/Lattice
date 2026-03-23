@@ -71,15 +71,33 @@ class BudgetClient:
 
 
 class VendorClient:
+    _vendors = [
+        {
+            "id": "V-10001",
+            "name": "Acme Industrial Supply",
+            "type": "supplier",
+            "region": "US",
+            "status": "active",
+            "default_terms": "net-30",
+        },
+        {
+            "id": "V-10002",
+            "name": "Northwind Office",
+            "type": "supplier",
+            "region": "US",
+            "status": "active",
+            "default_terms": "net-45",
+        },
+    ]
+
+    async def list_vendors(self):
+        return [_Obj(**vendor) for vendor in self._vendors]
+
     async def get_vendor(self, *, vendor_id: str):
-        return _Obj(
-            id=vendor_id,
-            name="Acme Industrial Supply",
-            type="supplier",
-            region="US",
-            status="active",
-            default_terms="net-30",
-        )
+        for vendor in self._vendors:
+            if vendor["id"] == vendor_id:
+                return _Obj(**vendor)
+        raise KeyError(f"Vendor '{vendor_id}' not found")
 
 
 class ApprovalClient:

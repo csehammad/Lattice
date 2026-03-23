@@ -96,9 +96,13 @@ async def main() -> None:
         if api_env.exists():
             for line in api_env.read_text().splitlines():
                 line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
                     key, val = line.split("=", 1)
                     os.environ[key.strip()] = val.strip()
+                else:
+                    os.environ["OPENAI_API_KEY"] = line
 
     if not os.environ.get("OPENAI_API_KEY"):
         console.print("[red]OPENAI_API_KEY not set. Set it or add to api.env[/red]")

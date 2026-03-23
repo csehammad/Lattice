@@ -730,6 +730,11 @@ python -m demo.agent.run_agent
 python -m demo.agent.run_agent --model gpt-4o-mini
 ```
 
+The full demo suite now lives under [`demo/`](demo/README.md):
+- [`demo/procurement/`](demo/procurement/README.md)
+- [`demo/travel/`](demo/travel/README.md)
+- [`demo/hr/`](demo/hr/README.md)
+
 Example session:
 
 ```text
@@ -779,7 +784,7 @@ projection = await engine.execute(fn, inputs, credentials=creds,
                                   client_factory=my_factory)
 ```
 
-See `demo/agent/` for a complete working implementation with OpenAI function-calling.
+See [`demo/README.md`](demo/README.md) for the full demo layout, and `demo/agent/` for the shared OpenAI function-calling implementation.
 
 ---
 

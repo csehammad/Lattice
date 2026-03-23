@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<!-- lattice-capability: PayrollProcessing v1.0 | inputs=2 proj=6 steps=3 scoped=3 -->
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PayrollProcessing — Lattice Capability</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 3rem 0;
+  }
+  .hero h1 { font-weight: 700; }
+  .hero .badge { font-size: 0.85rem; }
+  .signature-box {
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 16px 24px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-top: 1rem;
+    backdrop-filter: blur(4px);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .sig-name { font-weight: 700; font-size: 1.05em; }
+  .sig-param { color: #c3e0ff; }
+  .sig-field { color: #e0f0ff; }
+  .sig-example { opacity: 0.7; font-size: 0.9em; }
+  }
+  .section-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .step-card {
+    border-left: 3px solid #667eea;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .step-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .table th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; }
+  .schema-table code { font-size: 0.9rem; }
+  .nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  footer { color: #adb5bd; }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <a href="index.html" class="text-white-50 text-decoration-none d-inline-block mb-2" style="font-size:0.85rem">
+      <i class="bi bi-arrow-left me-1"></i>Back to Capability Portal
+    </a>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <h1 class="mb-0">PayrollProcessing</h1>
+      <span class="badge bg-light text-dark">v1.0</span>
+    </div>
+    <p class="mb-0 opacity-75">Lattice Capability Visualization</p>
+    <div class="signature-box"><span class='sig-name'>PayrollProcessing</span>(
+    <span class='sig-param'>department: <em>str</em></span>,
+    <span class='sig-param'>pay_period: <em>str</em></span>
+) &rarr; {
+    <span class='sig-field'>run_id: <em>str</em> <span class='sig-example'>(e.g. &#x27;PR1001&#x27;)</span></span>,
+    <span class='sig-field'>department: <em>str</em> <span class='sig-example'>(e.g. &#x27;Engineering&#x27;)</span></span>,
+    <span class='sig-field'>employee_count: <em>int</em> <span class='sig-example'>(e.g. 3)</span></span>,
+    <span class='sig-field'>total_amount: <em>float</em> <span class='sig-example'>(e.g. 13461.54)</span></span>,
+    <span class='sig-field'>status: <em>str</em> <span class='sig-example'>(e.g. &#x27;completed&#x27;)</span></span>,
+    <span class='sig-field'>pay_period: <em>str</em> <span class='sig-example'>(e.g. &#x27;2026-03&#x27;)</span></span>
+}</div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="bg-body-tertiary border-bottom sticky-top">
+  <div class="container">
+    <ul class="nav nav-pills py-2" id="sections">
+      <li class="nav-item"><a class="nav-link active" href="#overview-section">Overview</a></li>
+      <li class="nav-item"><a class="nav-link" href="#flow-section">Execution Flow</a></li>
+      <li class="nav-item"><a class="nav-link" href="#steps-section">Step Details</a></li>
+      <li class="nav-item"><a class="nav-link" href="#schema-section">Schemas</a></li>
+    </ul>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <!-- Overview -->
+  <section id="overview-section" class="mb-5">
+    <h5 class="section-title"><i class="bi bi-grid-3x3-gap"></i> Overview</h5>
+    <div class="row g-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="card text-center h-100">
+          <div class="card-body">
+            <div class="display-6 fw-bold text-primary">2</div>
+            <small class="text-body-secondary">Inputs</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card text-center h-100">
+          <div class="card-body">
+            <div class="display-6 fw-bold text-success">6</div>
+            <small class="text-body-secondary">Projection Fields</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card text-center h-100">
+          <div class="card-body">
+            <div class="display-6 fw-bold text-info">3</div>
+            <small class="text-body-secondary">Steps</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card text-center h-100">
+          <div class="card-body">
+            <div class="display-6 fw-bold text-warning">3</div>
+            <small class="text-body-secondary">Scoped Steps</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Execution Flow -->
+  <section id="flow-section" class="mb-5">
+    <h5 class="section-title"><i class="bi bi-diagram-3"></i> Execution Flow</h5>
+    <div class="card">
+      <div class="card-body p-4">
+        <pre class="mermaid">
+flowchart TD
+    S0["validate_department\nhr.read\n[retry: 2, hard-failure]"]
+    S1["fetch_active_roster\nhr.read\n[retry: 2]"]
+    S2["run_payroll\npayroll.write\n[retry: 2, hard-failure]"]
+    S0 --> S1
+    S1 --> S2
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step Details -->
+  <section id="steps-section" class="mb-5">
+    <h5 class="section-title"><i class="bi bi-list-check"></i> Step Details</h5>
+    <div class="row g-3">
+      
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 step-card" data-step="0">
+            <div class="card-body">
+              <h6 class="card-title font-monospace fw-bold">validate_department</h6>
+              <div><span class="badge bg-info-subtle text-info me-1"><i class="bi bi-shield-lock"></i> hr.read</span><span class="badge bg-warning-subtle text-warning me-1"><i class="bi bi-arrow-repeat"></i> retry: 2</span><span class="badge bg-danger-subtle text-danger me-1"><i class="bi bi-x-octagon"></i> hard-failure</span></div>
+              
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 step-card" data-step="1">
+            <div class="card-body">
+              <h6 class="card-title font-monospace fw-bold">fetch_active_roster</h6>
+              <div><span class="badge bg-info-subtle text-info me-1"><i class="bi bi-shield-lock"></i> hr.read</span><span class="badge bg-warning-subtle text-warning me-1"><i class="bi bi-arrow-repeat"></i> retry: 2</span></div>
+              <div class="mt-2"><small class="text-body-secondary">Depends on:</small> <span class="badge bg-secondary-subtle text-secondary">validate_department</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 step-card" data-step="2">
+            <div class="card-body">
+              <h6 class="card-title font-monospace fw-bold">run_payroll</h6>
+              <div><span class="badge bg-info-subtle text-info me-1"><i class="bi bi-shield-lock"></i> payroll.write</span><span class="badge bg-warning-subtle text-warning me-1"><i class="bi bi-arrow-repeat"></i> retry: 2</span><span class="badge bg-danger-subtle text-danger me-1"><i class="bi bi-x-octagon"></i> hard-failure</span></div>
+              <div class="mt-2"><small class="text-body-secondary">Depends on:</small> <span class="badge bg-secondary-subtle text-secondary">fetch_active_roster</span></div>
+            </div>
+          </div>
+        </div>
+    </div>
+  </section>
+
+  <!-- Schemas -->
+  <section id="schema-section" class="mb-5">
+    <h5 class="section-title"><i class="bi bi-braces"></i> Schemas</h5>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header bg-primary-subtle">
+            <strong><i class="bi bi-box-arrow-in-right"></i> Input Schema</strong>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-hover mb-0 schema-table">
+              <thead><tr><th>Field</th><th>Type</th></tr></thead>
+              <tbody><tr><td><code>department</code></td><td><span class="badge bg-primary-subtle text-primary">str</span></td></tr>
+<tr><td><code>pay_period</code></td><td><span class="badge bg-primary-subtle text-primary">str</span></td></tr>
+</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header bg-success-subtle">
+            <strong><i class="bi bi-box-arrow-right"></i> Projection Schema</strong>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-hover mb-0 schema-table">
+              <thead><tr><th>Field</th><th>Type</th></tr></thead>
+              <tbody><tr><td><code>run_id</code><br><small class="text-body-secondary">Unique payroll run identifier</small></td><td><span class="badge bg-success-subtle text-success">str</span><br><small class="text-body-secondary font-monospace">e.g. &#x27;PR1001&#x27;</small></td></tr>
+<tr><td><code>department</code><br><small class="text-body-secondary">Department name the run was executed for</small></td><td><span class="badge bg-success-subtle text-success">str</span><br><small class="text-body-secondary font-monospace">e.g. &#x27;Engineering&#x27;</small></td></tr>
+<tr><td><code>employee_count</code><br><small class="text-body-secondary">Number of employees included in the run</small></td><td><span class="badge bg-success-subtle text-success">int</span><br><small class="text-body-secondary font-monospace">e.g. 3</small></td></tr>
+<tr><td><code>total_amount</code><br><small class="text-body-secondary">Total gross payroll amount disbursed (USD)</small></td><td><span class="badge bg-success-subtle text-success">float</span><br><small class="text-body-secondary font-monospace">e.g. 13461.54</small></td></tr>
+<tr><td><code>status</code><br><small class="text-body-secondary">Final status of the payroll run</small></td><td><span class="badge bg-success-subtle text-success">str</span><br><small class="text-body-secondary font-monospace">e.g. &#x27;completed&#x27;</small></td></tr>
+<tr><td><code>pay_period</code><br><small class="text-body-secondary">The pay period this run covers</small></td><td><span class="badge bg-success-subtle text-success">str</span><br><small class="text-body-secondary font-monospace">e.g. &#x27;2026-03&#x27;</small></td></tr>
+</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="text-center py-3 border-top">
+  <small>Generated by <strong>Lattice</strong> &mdash; the capability runtime for outcome-based execution</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { curve: 'basis', padding: 20 },
+    themeVariables: {
+      primaryColor: '#e8eaf6',
+      primaryBorderColor: '#667eea',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#667eea',
+      secondaryColor: '#f3e5f5',
+      tertiaryColor: '#e8f5e9'
+    }
+  });
+</script>
+<script>
+  document.querySelectorAll('#sections .nav-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelectorAll('#sections .nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

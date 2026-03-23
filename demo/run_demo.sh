@@ -77,26 +77,33 @@ echo
 
 echo "──────────────────────────────────────────────────────────────"
 echo " Step 4: lattice visualize"
-echo "   Show the step tree, inputs, projection, and policies."
+echo "   Generate per-domain HTML visualizations and update each"
+echo "   domain's local index.html."
 echo "──────────────────────────────────────────────────────────────"
 echo
+
+mkdir -p demo/procurement/visualizations
+mkdir -p demo/travel/visualizations
 
 echo "--- VendorOnboarding (Procurement) ---"
 lattice visualize \
   --module demo.procurement.capabilities.vendor_onboarding \
-  --capability VendorOnboarding
+  --capability VendorOnboarding \
+  --html demo/procurement/visualizations/vendor_onboarding.html
 
 echo
 echo "--- EquipmentProcurement (Procurement) ---"
 lattice visualize \
   --module demo.procurement.capabilities.equipment_procurement \
-  --capability EquipmentProcurement
+  --capability EquipmentProcurement \
+  --html demo/procurement/visualizations/equipment_procurement.html
 
 echo
 echo "--- TripPlanning (Travel) ---"
 lattice visualize \
   --module demo.travel.capabilities.trip_planning \
-  --capability TripPlanning
+  --capability TripPlanning \
+  --html demo/travel/visualizations/trip_planning.html
 
 echo
 echo
@@ -169,7 +176,7 @@ echo "--- EquipmentProcurement ---"
 lattice run \
   --module demo.procurement.capabilities.equipment_procurement \
   --capability EquipmentProcurement \
-  --intent '{"item":"Standing Desk","quantity":10,"budget_department":"engineering","preferred_vendor_id":"V-10001","requested_by":"alex@company.com"}' \
+  --intent '{"item":"Standing Desk","quantity":10,"budget_department":"engineering","preferred_vendor":"Acme Industrial Supply","requested_by":"alex@company.com"}' \
   --scopes "budget.read,budget.write,vendor.read,approval.read,approval.write" \
   --stubs demo.stubs
 
@@ -185,16 +192,17 @@ lattice run \
 echo
 echo
 
-# ── Step 8: Python runner ───────────────────────────────────────
+# ── Step 8: Interactive demo handoff ────────────────────────────
 
 echo "──────────────────────────────────────────────────────────────"
-echo " Step 8: Python demo runner"
-echo "   Run all capabilities via the Engine API directly,"
-echo "   with rich formatted output and full audit trails."
+echo " Step 8: Interactive demo handoff"
+echo "   The real demo entrypoint is interactive and expects live"
+echo "   user input, so launch it manually after this script."
 echo "──────────────────────────────────────────────────────────────"
 echo
 
-python -m demo.run_demo
+echo "Run this next:"
+echo "  python -m demo.run_demo"
 
 echo
 echo "============================================================"
