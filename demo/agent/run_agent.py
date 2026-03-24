@@ -8,8 +8,10 @@ manifest on first execution.
 Usage:
     python -m demo.agent.run_agent
     python -m demo.agent.run_agent --model gpt-4o-mini
+    python -m demo.agent.run_agent -q "Onboard Acme Corp as a supplier in the US"
+    python -m demo.agent.run_agent -q "first request" -q "second request"
 
-Requires OPENAI_API_KEY in environment (or in api.env).
+Requires OPENAI_API_KEY in environment (or in repo-root ``api.env``).
 """
 
 from __future__ import annotations
@@ -88,6 +90,17 @@ async def main() -> None:
         default="gpt-4o",
         help="OpenAI model name (default: gpt-4o)",
     )
+    parser.add_argument(
+        "--query",
+        "-q",
+        action="append",
+        dest="queries",
+        metavar="TEXT",
+        help=(
+            "Run one user message and print the reply (repeat flag for multiple). "
+            "Exits after; does not start interactive mode."
+        ),
+    )
     args = parser.parse_args()
     model = args.model
 
@@ -111,6 +124,33 @@ async def main() -> None:
     agent = build_agent(model)
 
     n_capabilities = len(agent.lazy_registry.manifest)
+
+    async def run_queries(queries: list[str]) -> None:
+        """Plain stdout so output is visible when not a TTY (e.g. logs, CI)."""
+        prev_audit_count = 0
+        for user_input in queries:
+            print(f"\nYou: {user_input}", flush=True)
+            try:
+                reply = await agent.handle_message(user_input)
+            except Exception as exc:
+                print(f"Error: {exc}\n", flush=True)
+                continue
+            current_audit_count = len(agent.engine.audit_trail.records)
+            if current_audit_count > prev_audit_count:
+                for rec in agent.engine.audit_trail.records[prev_audit_count:current_audit_count]:
+                    print(
+                        f"[execution] {rec.capability_name} v{rec.capability_version} "
+                        f"— {rec.status} in {rec.duration_ms:.0f}ms "
+                        f"({len(rec.steps)} steps)",
+                        flush=True,
+                    )
+                prev_audit_count = current_audit_count
+            print(f"Agent: {reply}\n", flush=True)
+
+    if args.queries:
+        await run_queries(args.queries)
+        return
+
     console.print(
         Panel(
             "[bold]Lattice Agent Demo — Search-then-Execute[/bold]\n\n"

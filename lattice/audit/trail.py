@@ -5,9 +5,12 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lattice.log import get_logger
+
+if TYPE_CHECKING:
+    from lattice.audit.sinks import AuditSink
 
 logger = get_logger(__name__)
 
@@ -119,13 +122,19 @@ class AuditRecord:
 
 
 class AuditTrail:
-    """Collects AuditRecords.  Pluggable sink (defaults to in-memory)."""
+    """Routes AuditRecords to a pluggable sink.
 
-    def __init__(self) -> None:
-        self._records: list[AuditRecord] = []
+    Pass any ``AuditSink`` implementation to customise storage.
+    Defaults to ``InMemoryAuditSink`` when no sink is provided.
+    """
+
+    def __init__(self, sink: AuditSink | None = None) -> None:
+        from lattice.audit.sinks import InMemoryAuditSink
+
+        self._sink: AuditSink = sink or InMemoryAuditSink()
 
     def record(self, audit: AuditRecord) -> None:
-        self._records.append(audit)
+        self._sink.emit(audit)
         logger.debug(
             "Audit recorded: %s [%s] %s (%.1fms)",
             audit.capability_name,
@@ -136,7 +145,7 @@ class AuditTrail:
 
     @property
     def records(self) -> list[AuditRecord]:
-        return list(self._records)
+        return self._sink.records
 
     def query(
         self,
@@ -144,11 +153,11 @@ class AuditTrail:
         requester: str | None = None,
         status: str | None = None,
     ) -> list[AuditRecord]:
-        results = self._records
-        if capability:
-            results = [r for r in results if r.capability_name == capability]
-        if requester:
-            results = [r for r in results if r.requester == requester]
-        if status:
-            results = [r for r in results if r.status == status]
-        return results
+        return self._sink.query(
+            capability=capability, requester=requester, status=status
+        )
+
+    @property
+    def sink(self) -> AuditSink:
+        """The underlying sink instance."""
+        return self._sink

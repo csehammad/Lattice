@@ -701,7 +701,7 @@ record = engine.audit_trail.records[-1]
 print(record.execution_id)  # unique ID
 print(record.status)         # completed / failed
 print(record.duration_ms)    # wall-clock time
-print(record.step_results)   # per-step outcomes
+print(record.steps)           # per-step outcomes
 ```
 
 ---

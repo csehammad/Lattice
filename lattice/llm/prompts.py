@@ -27,6 +27,25 @@ Rules:
   the result to a user and present next actions.  No raw backend data.
 - If some operations don't fit any capability, list them under "unmatched".
 
+IMPORTANT — Lifecycle coverage:
+- Don't only propose "create" or "action" capabilities.  Real agents
+  need the FULL lifecycle for every domain entity: search, view, create,
+  update, cancel/delete, and status-check.
+- For every write capability (create, assign, submit), also propose:
+  (a) a read/query capability that lets the user inspect the result later,
+  (b) an update capability if the API supports modification,
+  (c) a cancel/revoke capability if the API supports deletion.
+- Read-only / query capabilities are just as important as action
+  capabilities — users frequently ask "show me X" or "what's the
+  status of Y" after an action has been taken.
+- Query capabilities may compose a single GET with enrichment from
+  other endpoints (e.g. get assignment + get employee details).
+- When a projection contains a list and a decision_required flag,
+  note this in the description — it signals a two-phase flow where
+  the agent presents options and waits for a user choice.
+- Aim to cover ALL or nearly all operations.  Minimize unmatched
+  operations.
+
 Return ONLY a JSON object in this exact structure (no markdown fences,
 no commentary):
 

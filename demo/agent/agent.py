@@ -22,6 +22,8 @@ import json
 from typing import Any
 
 from lattice.auth.scopes import CredentialStore
+from lattice.capability import get_capability_def
+from lattice.errors import LatticeError, PermissionDenied, ValidationError
 from lattice.runtime.engine import Engine
 from lattice.runtime.registry import LazyRegistry
 
@@ -80,7 +82,7 @@ class LatticeAgent:
         self.engine = engine
         self.client_factory = client_factory
         self.openai_model = openai_model
-        self.scopes = scopes or _ALL_DEMO_SCOPES
+        self.scopes = _ALL_DEMO_SCOPES if scopes is None else scopes
         self.max_messages = max_messages
         self._tools = LazyRegistry.openai_meta_tools()
         self._messages: list[dict[str, Any]] = [{"role": "system", "content": _SYSTEM_PROMPT}]
@@ -219,18 +221,56 @@ class LatticeAgent:
 
     async def _handle_execute(self, capability_name: str, inputs: dict[str, Any]) -> dict[str, Any]:
         """Load (if needed) and execute a capability through the engine."""
-        self.lazy_registry.ensure_loaded(capability_name)
+        manifest_entry = self.lazy_registry._manifest.get(capability_name, {})
+        if not inputs:
+            return {
+                "error": f"Missing inputs for capability '{capability_name}'",
+                "required_inputs": manifest_entry.get("inputs", {}),
+                "instruction": (
+                    "Call execute_capability again with the same capability_name and a complete "
+                    "inputs object containing every key in required_inputs."
+                ),
+            }
+        try:
+            self.lazy_registry.ensure_loaded(capability_name)
+        except LatticeError as exc:
+            return {
+                "error": str(exc),
+                "instruction": (
+                    "Use search_capabilities to find a valid capability name, then call "
+                    "execute_capability again with that exact name."
+                ),
+            }
         fn = self.lazy_registry.get_function(capability_name)
+        defn = get_capability_def(fn)
+        schema_hint = {k: v.__name__ for k, v in defn.input_schema.items()}
         creds = CredentialStore(granted_scopes=self.scopes)
-
-        result = await self.engine.execute(
-            fn,
-            inputs,
-            credentials=creds,
-            client_factory=self.client_factory,
-            requester="lattice-agent",
-        )
-        return result
+        try:
+            return await self.engine.execute(
+                fn,
+                inputs,
+                credentials=creds,
+                client_factory=self.client_factory,
+                requester="lattice-agent",
+            )
+        except ValidationError as exc:
+            return {
+                "error": str(exc),
+                "required_inputs": schema_hint,
+                "instruction": (
+                    "Adjust inputs to match required_inputs (keys and value types), then call "
+                    "execute_capability again."
+                ),
+            }
+        except PermissionDenied as exc:
+            return {
+                "error": str(exc),
+                "required_inputs": schema_hint,
+                "instruction": (
+                    "This capability needs OAuth scopes the agent does not have. Narrow the task "
+                    "or use a workflow that fits the granted scopes."
+                ),
+            }
 
     @property
     def last_audit(self):

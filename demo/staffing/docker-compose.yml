@@ -1,0 +1,27 @@
+services:
+  staffing-api:
+    build: .
+    command: uvicorn staffing_api.app:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  staffing-agent:
+    build: .
+    command: python run_demo.py
+    stdin_open: true
+    tty: true
+    env_file: api.env
+    environment:
+      - STAFFING_API_URL=http://staffing-api:8001
+    depends_on:
+      staffing-api:
+        condition: service_healthy

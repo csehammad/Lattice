@@ -10,6 +10,7 @@ Commands::
     lattice register    # Make it available to models
     lattice run         # Test with a real intent
     lattice bind        # Connect individual steps to new APIs
+    lattice prompt      # Generate agent system prompt from registry
 """
 
 from __future__ import annotations
@@ -484,9 +485,20 @@ def register(module_path: str, cap_name: str, registry_path: str) -> None:
 
     from lattice.runtime.registry import CapabilityRegistry
 
+    reg_path = Path(registry_path)
+    existing: dict[str, Any] = {}
+    if reg_path.exists():
+        existing = json.loads(reg_path.read_text())
+
     registry = CapabilityRegistry()
     defn = registry.register(fn)
     registry.save(registry_path)
+
+    # Merge: new save only contains the just-registered capability,
+    # so layer it on top of the existing entries.
+    new_data = json.loads(reg_path.read_text())
+    merged = {**existing, **new_data}
+    reg_path.write_text(json.dumps(merged, indent=2))
     console.print(f"Registered [bold]{defn.name}[/bold] -> {registry_path}")
 
 
@@ -564,6 +576,126 @@ def bind(module_path: str, step_name: str, target: str) -> None:
         "[yellow]Note:[/yellow] Binding updates the step body to use the specified client. "
         "Edit the generated capability file to complete the integration."
     )
+
+
+# ---------------------------------------------------------------------------
+# prompt
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.option(
+    "--registry",
+    "registry_path",
+    required=True,
+    help="Path to registry.json (created by `lattice register` or CapabilityRegistry.save).",
+)
+@click.option("--domain", default=None, help="Domain name for the system prompt (e.g. 'staffing').")
+@click.option("--output", "-o", default=None, help="Write the system prompt to a file.")
+def prompt(registry_path: str, domain: str | None, output: str | None) -> None:
+    """Generate an agent system prompt from a capability registry.
+
+    Reads the registry manifest and produces a system prompt that teaches
+    the agent what capabilities exist, what inputs each requires, and
+    what projections to expect — so the agent can drive the search-then-
+    execute loop without hard-coded knowledge.
+    """
+    path = Path(registry_path)
+    if not path.exists():
+        console.print(f"[red]Registry not found:[/red] {registry_path}")
+        sys.exit(1)
+
+    manifest = json.loads(path.read_text())
+    if not manifest:
+        console.print("[yellow]Registry is empty — no capabilities found.[/yellow]")
+        sys.exit(1)
+
+    domain_label = domain or "general"
+    sys_prompt = _build_system_prompt(manifest, domain_label)
+
+    if output:
+        out = Path(output)
+        out.write_text(sys_prompt)
+        console.print(f"System prompt written to [bold]{output}[/bold]")
+        console.print(f"  Capabilities: {len(manifest)}")
+        console.print(f"  Domain: {domain_label}")
+        console.print(f"  Length: {len(sys_prompt)} chars")
+    else:
+        console.print(sys_prompt)
+
+
+def _build_system_prompt(manifest: dict[str, Any], domain: str) -> str:
+    """Build an agent system prompt from a capability registry manifest."""
+    from lattice.types import projection_field_type
+
+    cap_sections = []
+    for name, entry in manifest.items():
+        inputs = entry.get("inputs", {})
+        proj = entry.get("projection", {})
+
+        input_lines = []
+        for iname, itype in inputs.items():
+            input_lines.append(f"    - {iname}: {itype}")
+
+        proj_lines = []
+        for pname, pspec in proj.items():
+            if isinstance(pspec, dict):
+                ptype = pspec.get("type", "any")
+                pdesc = pspec.get("description", "")
+                pex = pspec.get("example", "")
+                line = f"    - {pname} ({ptype}): {pdesc}"
+                if pex:
+                    line += f"  [example: {pex!r}]"
+                proj_lines.append(line)
+            else:
+                proj_lines.append(f"    - {pname}: {pspec}")
+
+        section = f"""### {name}
+  Inputs:
+{chr(10).join(input_lines) if input_lines else '    (none)'}
+  Projection:
+{chr(10).join(proj_lines) if proj_lines else '    (none)'}"""
+        cap_sections.append(section)
+
+    capabilities_block = "\n\n".join(cap_sections)
+    cap_count = len(manifest)
+
+    return f"""\
+You are a {domain} assistant powered by Lattice.
+
+You have exactly TWO tools:
+1. search_capabilities — search for available capabilities by describing
+   what you want to accomplish. ALWAYS call this first for any new request.
+2. execute_capability — execute a capability by its exact name with the
+   required inputs. Only call this after you know the capability name and
+   required inputs from a search result.
+
+Workflow for every user request:
+- Call search_capabilities with a short description of the goal.
+- Review the results: find the best match and understand required inputs.
+- Extract business-level input values from the user's message.
+- Do not translate names to internal system IDs yourself — the Lattice
+  capability will resolve names, titles, and departments internally.
+- Call execute_capability with the correct name and an `inputs` JSON object
+  containing ALL required fields from the search results.
+- CRITICAL: You MUST include the `inputs` object with all required fields.
+- If a tool returns an error saying inputs are missing or invalid, fix the
+  payload and call execute_capability again.
+
+IMPORTANT — Two-phase flows:
+- When a projection contains `decision_required: true` and a list of options
+  (e.g. candidates), you MUST present the options to the user and ask them
+  to pick before proceeding with the next action.
+- Do NOT auto-select; wait for the user's explicit choice.
+
+After receiving any projection, respond in clear natural language using
+markdown formatting. Include specific values (IDs, statuses, amounts).
+Do not invent information beyond what the projection contains.
+
+## Available Capabilities ({cap_count} registered)
+
+{capabilities_block}
+"""
 
 
 # ---------------------------------------------------------------------------

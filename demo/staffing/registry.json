@@ -1,0 +1,272 @@
+{
+  "FindCandidates": {
+    "name": "FindCandidates",
+    "version": "1.0",
+    "inputs": {
+      "project_name": "str",
+      "role": "str",
+      "required_skills": "list",
+      "department": "str",
+      "start_date": "str",
+      "duration_weeks": "int"
+    },
+    "projection": {
+      "project_id": {
+        "type": "str",
+        "example": "PROJ-4501",
+        "description": "Resolved project identifier"
+      },
+      "candidates": {
+        "type": "list",
+        "example": [
+          {
+            "candidate_id": "EMP-1024",
+            "name": "Alice Chen",
+            "role_fit_score": 92,
+            "availability_pct": 80
+          }
+        ],
+        "description": "Ranked list of candidates with fit scores, availability, rates, and conflict flags"
+      },
+      "total_found": {
+        "type": "int",
+        "example": 4,
+        "description": "Total candidates matching base criteria"
+      },
+      "recommendation": {
+        "type": "dict",
+        "example": {
+          "candidate_id": "EMP-1024",
+          "rationale": "Highest fit score, no conflicts"
+        },
+        "description": "System top recommendation with reasoning"
+      },
+      "project_urgency": {
+        "type": "str",
+        "example": "high",
+        "description": "Staffing urgency for the project (low, medium, high, critical)"
+      },
+      "decision_required": {
+        "type": "bool",
+        "example": true,
+        "description": "Whether a human/agent decision is needed before proceeding to assignment"
+      }
+    },
+    "signature": "FindCandidates(project_name, role, required_skills, department, start_date, duration_weeks) -> { project_id: str (e.g. 'PROJ-4501'), candidates: list (e.g. [{'candidate_id': 'EMP-1024', 'name': 'Alice Chen', 'role_fit_score': 92, 'availability_pct': 80}]), total_found: int (e.g. 4), recommendation: dict (e.g. {'candidate_id': 'EMP-1024', 'rationale': 'Highest fit score, no conflicts'}), project_urgency: str (e.g. 'high'), decision_required: bool (e.g. True) }",
+    "module_path": "staffing_lattice.capabilities.find_candidates",
+    "function_name": "find_candidates"
+  },
+  "AssignResource": {
+    "name": "AssignResource",
+    "version": "1.0",
+    "inputs": {
+      "candidate_id": "str",
+      "project_id": "str",
+      "role": "str",
+      "start_date": "str",
+      "allocation_pct": "int",
+      "requested_by": "str"
+    },
+    "projection": {
+      "assignment_id": {
+        "type": "str",
+        "example": "ASGN-48291",
+        "description": "Unique assignment identifier"
+      },
+      "status": {
+        "type": "str",
+        "example": "confirmed",
+        "description": "Assignment status (confirmed, pending_manager_approval, conflict_detected)"
+      },
+      "candidate_name": {
+        "type": "str",
+        "example": "Alice Chen",
+        "description": "Name of the assigned resource"
+      },
+      "effective_start_date": {
+        "type": "str",
+        "example": "2026-04-01",
+        "description": "Confirmed start date"
+      },
+      "allocation_confirmed_pct": {
+        "type": "int",
+        "example": 80,
+        "description": "Confirmed allocation percentage"
+      },
+      "notifications_sent": {
+        "type": "list",
+        "example": [
+          "candidate",
+          "current_manager",
+          "project_lead"
+        ],
+        "description": "Stakeholders who were notified"
+      },
+      "follow_up_actions": {
+        "type": "list",
+        "example": [
+          "schedule_onboarding_sync",
+          "transfer_current_tasks"
+        ],
+        "description": "Actions to take after assignment is confirmed"
+      }
+    },
+    "signature": "AssignResource(candidate_id, project_id, role, start_date, allocation_pct, requested_by) -> { assignment_id: str (e.g. 'ASGN-48291'), status: str (e.g. 'confirmed'), candidate_name: str (e.g. 'Alice Chen'), effective_start_date: str (e.g. '2026-04-01'), allocation_confirmed_pct: int (e.g. 80), notifications_sent: list (e.g. ['candidate', 'current_manager', 'project_lead']), follow_up_actions: list (e.g. ['schedule_onboarding_sync', 'transfer_current_tasks']) }",
+    "module_path": "staffing_lattice.capabilities.assign_resource",
+    "function_name": "assign_resource"
+  },
+  "ViewProjectStaffing": {
+    "name": "ViewProjectStaffing",
+    "version": "1.0",
+    "inputs": {
+      "project_id": "str"
+    },
+    "projection": {
+      "project_name": {
+        "type": "str",
+        "example": "Project Phoenix",
+        "description": "Name of the project"
+      },
+      "status": {
+        "type": "str",
+        "example": "active",
+        "description": "Current project status"
+      },
+      "staffing_gaps": {
+        "type": "list",
+        "example": [
+          "Data Scientist",
+          "UX Designer"
+        ],
+        "description": "Unfilled positions and skill needs"
+      },
+      "resource_plan": {
+        "type": "list",
+        "example": [
+          {
+            "employee_id": "EMP-2187",
+            "role": "Backend Engineer",
+            "allocation_pct": 100
+          }
+        ],
+        "description": "Current resource assignments for the project"
+      }
+    },
+    "signature": "ViewProjectStaffing(project_id) -> { project_name: str (e.g. 'Project Phoenix'), status: str (e.g. 'active'), staffing_gaps: list (e.g. ['Data Scientist', 'UX Designer']), resource_plan: list (e.g. [{'employee_id': 'EMP-2187', 'role': 'Backend Engineer', 'allocation_pct': 100}]) }",
+    "module_path": "staffing_lattice.capabilities.view_project_staffing",
+    "function_name": "view_project_staffing"
+  },
+  "ViewEmployeeWorkload": {
+    "name": "ViewEmployeeWorkload",
+    "version": "1.0",
+    "inputs": {
+      "employee_id": "str"
+    },
+    "projection": {
+      "employee_name": {
+        "type": "str",
+        "example": "Alice Chen",
+        "description": "Full name of the employee"
+      },
+      "current_role": {
+        "type": "str",
+        "example": "Senior Backend Engineer",
+        "description": "Employee current role"
+      },
+      "skills": {
+        "type": "list",
+        "example": [
+          {
+            "skill": "Python",
+            "proficiency": "expert"
+          }
+        ],
+        "description": "Skill profile with proficiency levels"
+      },
+      "availability_pct": {
+        "type": "int",
+        "example": 60,
+        "description": "Current availability percentage"
+      },
+      "schedule": {
+        "type": "dict",
+        "example": {
+          "current_projects": [
+            "Phoenix"
+          ],
+          "pto": []
+        },
+        "description": "Current schedule including project commitments and PTO"
+      }
+    },
+    "signature": "ViewEmployeeWorkload(employee_id) -> { employee_name: str (e.g. 'Alice Chen'), current_role: str (e.g. 'Senior Backend Engineer'), skills: list (e.g. [{'skill': 'Python', 'proficiency': 'expert'}]), availability_pct: int (e.g. 60), schedule: dict (e.g. {'current_projects': ['Phoenix'], 'pto': []}) }",
+    "module_path": "staffing_lattice.capabilities.view_employee_workload",
+    "function_name": "view_employee_workload"
+  },
+  "UpdateAssignment": {
+    "name": "UpdateAssignment",
+    "version": "1.0",
+    "inputs": {
+      "assignment_id": "str",
+      "role": "str",
+      "allocation_pct": "int",
+      "start_date": "str"
+    },
+    "projection": {
+      "assignment_id": {
+        "type": "str",
+        "example": "ASGN-48292",
+        "description": "Unique assignment identifier"
+      },
+      "status": {
+        "type": "str",
+        "example": "updated",
+        "description": "Status of the assignment after update"
+      },
+      "updated_fields": {
+        "type": "dict",
+        "example": {
+          "role": "Senior Backend Engineer",
+          "allocation_pct": 80
+        },
+        "description": "Fields that were changed"
+      },
+      "notification_sent": {
+        "type": "bool",
+        "example": true,
+        "description": "Whether stakeholders were notified of the change"
+      }
+    },
+    "signature": "UpdateAssignment(assignment_id, role, allocation_pct, start_date) -> { assignment_id: str (e.g. 'ASGN-48292'), status: str (e.g. 'updated'), updated_fields: dict (e.g. {'role': 'Senior Backend Engineer', 'allocation_pct': 80}), notification_sent: bool (e.g. True) }",
+    "module_path": "staffing_lattice.capabilities.update_assignment",
+    "function_name": "update_assignment"
+  },
+  "CancelAssignment": {
+    "name": "CancelAssignment",
+    "version": "1.0",
+    "inputs": {
+      "assignment_id": "str",
+      "notify": "bool"
+    },
+    "projection": {
+      "assignment_id": {
+        "type": "str",
+        "example": "ASGN-48292",
+        "description": "Unique identifier for the cancelled assignment"
+      },
+      "status": {
+        "type": "str",
+        "example": "cancelled",
+        "description": "Assignment status after cancellation"
+      },
+      "notification_sent": {
+        "type": "bool",
+        "example": true,
+        "description": "Whether stakeholders were notified"
+      }
+    },
+    "signature": "CancelAssignment(assignment_id, notify) -> { assignment_id: str (e.g. 'ASGN-48292'), status: str (e.g. 'cancelled'), notification_sent: bool (e.g. True) }",
+    "module_path": "staffing_lattice.capabilities.cancel_assignment",
+    "function_name": "cancel_assignment"
+  }
+}

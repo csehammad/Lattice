@@ -174,11 +174,108 @@ class CapabilityRegistry:
 # ---------------------------------------------------------------------------
 
 
-def _score_entry(entry: dict[str, Any], keywords: list[str]) -> int:
-    """Score a manifest entry against search keywords (case-insensitive)."""
+# ---------------------------------------------------------------------------
+# agrep-inspired capability search
+#   Term expansion, intent detection, domain-aware scoring, score breakdown.
+#   Deterministic — no LLM, no embeddings.
+#   See: https://github.com/csehammad/agrep
+# ---------------------------------------------------------------------------
+
+_TERM_EXPANSIONS: dict[str, list[str]] = {
+    "assign": ["assignment", "allocate", "allocation", "resource"],
+    "assignment": ["assign", "allocate", "allocation", "resource"],
+    "cancel": ["remove", "revoke", "terminate", "cancellation"],
+    "remove": ["cancel", "revoke", "cancellation"],
+    "view": ["show", "get", "display", "list", "check", "status", "inspect"],
+    "show": ["view", "get", "display", "list", "check", "status"],
+    "status": ["view", "show", "check", "get"],
+    "update": ["change", "modify", "edit", "adjust"],
+    "change": ["update", "modify", "edit", "adjust"],
+    "find": ["search", "discover", "locate", "lookup", "candidates"],
+    "search": ["find", "discover", "locate", "lookup"],
+    "employee": ["staff", "engineer", "resource", "worker", "member", "person"],
+    "staff": ["employee", "engineer", "resource", "worker", "staffing"],
+    "engineer": ["employee", "staff", "resource", "developer"],
+    "project": ["staffing", "team", "initiative"],
+    "workload": ["schedule", "availability", "capacity", "utilization"],
+    "schedule": ["workload", "availability", "calendar", "commitments"],
+    "availability": ["schedule", "workload", "capacity", "free"],
+    "candidate": ["applicant", "resource", "employee", "match"],
+    "gap": ["unfilled", "vacancy", "opening", "missing", "need"],
+    "notify": ["notification", "alert", "inform", "message"],
+    "notification": ["notify", "alert", "inform", "message"],
+    "skill": ["skills", "competency", "expertise", "proficiency"],
+    "role": ["position", "title", "job"],
+}
+
+_INTENT_MAP: dict[str, str] = {
+    "show": "view",
+    "view": "view",
+    "display": "view",
+    "list": "view",
+    "check": "view",
+    "status": "view",
+    "inspect": "view",
+    "who": "view",
+    "what": "view",
+    "find": "search",
+    "search": "search",
+    "discover": "search",
+    "locate": "search",
+    "lookup": "search",
+    "assign": "create",
+    "create": "create",
+    "allocate": "create",
+    "add": "create",
+    "update": "update",
+    "change": "update",
+    "modify": "update",
+    "edit": "update",
+    "adjust": "update",
+    "cancel": "cancel",
+    "remove": "cancel",
+    "revoke": "cancel",
+    "terminate": "cancel",
+    "delete": "cancel",
+}
+
+_INTENT_CAPABILITY_BOOST: dict[str, list[str]] = {
+    "view": ["View", "Get", "Check", "List", "Status"],
+    "search": ["Find", "Search", "Discover"],
+    "create": ["Assign", "Create", "Submit"],
+    "update": ["Update", "Modify", "Change"],
+    "cancel": ["Cancel", "Remove", "Revoke"],
+}
+
+
+def _expand_terms(keywords: list[str]) -> list[str]:
+    """Expand keywords with domain synonyms (agrep-style term expansion)."""
+    expanded = set(keywords)
+    for kw in keywords:
+        if kw in _TERM_EXPANSIONS:
+            expanded.update(_TERM_EXPANSIONS[kw])
+    return list(expanded)
+
+
+def _detect_intent(keywords: list[str]) -> str | None:
+    """Detect user intent from query keywords (agrep-style intent detection)."""
+    for kw in keywords:
+        if kw in _INTENT_MAP:
+            return _INTENT_MAP[kw]
+    return None
+
+
+def _score_entry(entry: dict[str, Any], keywords: list[str]) -> dict[str, Any]:
+    """Score a manifest entry with agrep-style multi-signal scoring.
+
+    Returns a dict with total score and breakdown for transparency.
+    """
+    name = entry.get("name", "")
+    name_lower = name.lower()
+
     searchable = " ".join(
         [
-            entry.get("name", ""),
+            name,
             entry.get("signature", ""),
             " ".join(entry.get("inputs", {}).keys()),
             " ".join(entry.get("projection", {}).keys()),
@@ -189,7 +286,46 @@ def _score_entry(entry: dict[str, Any], keywords: list[str]) -> int:
             ),
         ]
     ).lower()
-    return sum(1 for kw in keywords if kw in searchable)
+
+    expanded = _expand_terms(keywords)
+    intent = _detect_intent(keywords)
+
+    # 1. Direct term hits (original keywords)
+    direct_hits = sum(1 for kw in keywords if kw in searchable)
+    direct_score = direct_hits / max(len(keywords), 1)
+
+    # 2. Expanded term hits (synonyms)
+    extra_terms = [t for t in expanded if t not in keywords]
+    expanded_hits = sum(1 for kw in extra_terms if kw in searchable)
+    expansion_score = (expanded_hits / max(len(extra_terms), 1)) * 0.5 if extra_terms else 0.0
+
+    # 3. Intent alignment bonus
+    intent_score = 0.0
+    if intent and intent in _INTENT_CAPABILITY_BOOST:
+        prefixes = _INTENT_CAPABILITY_BOOST[intent]
+        for prefix in prefixes:
+            if prefix.lower() in name_lower:
+                intent_score = 0.4
+                break
+
+    # 4. Name relevance bonus (keyword directly in capability name)
+    name_score = 0.0
+    for kw in keywords:
+        if kw in name_lower:
+            name_score += 0.2
+    name_score = min(name_score, 0.4)
+
+    total = direct_score + expansion_score + intent_score + name_score
+
+    return {
+        "total": round(total, 3),
+        "direct": round(direct_score, 3),
+        "expansion": round(expansion_score, 3),
+        "intent": round(intent_score, 3),
+        "name": round(name_score, 3),
+        "detected_intent": intent,
+        "expanded_terms": len(expanded),
+    }
 
 
 class LazyRegistry:
@@ -272,23 +408,28 @@ class LazyRegistry:
         return dict(self._manifest)
 
     def search(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
-        """Keyword search over the manifest. Returns matching entries."""
+        """agrep-style search over the manifest with term expansion,
+        intent detection, and multi-signal scoring."""
         keywords = [w.lower() for w in query.split() if len(w) >= 2]
         if not keywords:
             return list(self._manifest.values())[:limit]
 
         scored = []
         for entry in self._manifest.values():
-            score = _score_entry(entry, keywords)
-            if score > 0:
-                scored.append((score, entry))
+            breakdown = _score_entry(entry, keywords)
+            if breakdown["total"] > 0:
+                result = dict(entry)
+                result["_search_score"] = breakdown
+                scored.append((breakdown["total"], result))
         scored.sort(key=lambda x: x[0], reverse=True)
         results = [entry for _, entry in scored[:limit]]
         logger.debug(
-            "Search '%s' matched %d/%d capabilities",
+            "Search '%s' matched %d/%d capabilities (intent=%s, expanded=%d terms)",
             query,
             len(results),
             len(self._manifest),
+            _detect_intent(keywords),
+            len(_expand_terms(keywords)),
         )
         return results
 

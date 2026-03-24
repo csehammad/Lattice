@@ -1,0 +1,809 @@
+openapi: "3.0.3"
+info:
+  title: Enterprise Staffing Platform
+  version: "1.0.0"
+  description: >
+    Internal staffing and resource management platform exposing project,
+    employee, availability, assignment, notification, and resource-plan
+    services.
+
+servers:
+  - url: https://api.internal.company.com/v1
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    # ── Projects ────────────────────────────────────────────────────────
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        department:
+          type: string
+        status:
+          type: string
+          enum: [active, planning, completed, on_hold]
+        tech_stack:
+          type: array
+          items:
+            type: string
+        team_size:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    ProjectSearchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        department:
+          type: string
+        status:
+          type: string
+
+    ProjectSearchResult:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        total:
+          type: integer
+
+    StaffingGap:
+      type: object
+      properties:
+        role:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        open_since:
+          type: string
+          format: date
+
+    StaffingGapsResult:
+      type: object
+      properties:
+        project_id:
+          type: string
+        gaps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffingGap"
+
+    # ── Employees ───────────────────────────────────────────────────────
+
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        department:
+          type: string
+        current_role:
+          type: string
+        seniority:
+          type: string
+          enum: [junior, mid, senior, lead, principal]
+        hourly_rate:
+          type: number
+        status:
+          type: string
+          enum: [active, on_leave, terminated]
+        past_project_ratings:
+          type: array
+          items:
+            type: number
+
+    EmployeeSearchRequest:
+      type: object
+      properties:
+        skills:
+          type: array
+          items:
+            type: string
+        department:
+          type: string
+        seniority:
+          type: string
+        role:
+          type: string
+
+    EmployeeSearchResult:
+      type: object
+      properties:
+        employees:
+          type: array
+          items:
+            $ref: "#/components/schemas/Employee"
+        total:
+          type: integer
+
+    SkillProfile:
+      type: object
+      properties:
+        employee_id:
+          type: string
+        skills:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              proficiency:
+                type: integer
+                minimum: 1
+                maximum: 5
+              years_experience:
+                type: number
+
+    # ── Availability ────────────────────────────────────────────────────
+
+    AvailabilityRecord:
+      type: object
+      properties:
+        employee_id:
+          type: string
+        allocation_pct:
+          type: integer
+        current_projects:
+          type: array
+          items:
+            type: string
+        available_from:
+          type: string
+          format: date
+
+    BatchAvailabilityRequest:
+      type: object
+      required: [employee_ids]
+      properties:
+        employee_ids:
+          type: array
+          items:
+            type: string
+
+    BatchAvailabilityResult:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailabilityRecord"
+
+    ScheduleEntry:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [project, pto, blackout]
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        allocation_pct:
+          type: integer
+
+    ScheduleResult:
+      type: object
+      properties:
+        employee_id:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleEntry"
+
+    # ── Assignments ─────────────────────────────────────────────────────
+
+    AssignmentValidateRequest:
+      type: object
+      required: [employee_id, project_id, allocation_pct, start_date]
+      properties:
+        employee_id:
+          type: string
+        project_id:
+          type: string
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        role:
+          type: string
+
+    AssignmentValidateResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+
+    AssignmentCreateRequest:
+      type: object
+      required: [employee_id, project_id, allocation_pct, start_date, role, requested_by]
+      properties:
+        employee_id:
+          type: string
+        project_id:
+          type: string
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        role:
+          type: string
+        requested_by:
+          type: string
+
+    Assignment:
+      type: object
+      properties:
+        assignment_id:
+          type: string
+        employee_id:
+          type: string
+        employee_name:
+          type: string
+        project_id:
+          type: string
+        role:
+          type: string
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [confirmed, pending_manager_approval, conflict_detected]
+        created_at:
+          type: string
+          format: date-time
+
+    AssignmentUpdateRequest:
+      type: object
+      properties:
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        status:
+          type: string
+
+    # ── Notifications ───────────────────────────────────────────────────
+
+    NotificationSendRequest:
+      type: object
+      required: [recipients, message_type, details]
+      properties:
+        recipients:
+          type: array
+          items:
+            type: string
+        message_type:
+          type: string
+          enum: [assignment_created, assignment_updated, assignment_cancelled]
+        details:
+          type: object
+
+    Notification:
+      type: object
+      properties:
+        notification_id:
+          type: string
+        recipients:
+          type: array
+          items:
+            type: string
+        message_type:
+          type: string
+        status:
+          type: string
+          enum: [sent, pending, failed]
+        sent_at:
+          type: string
+          format: date-time
+
+    # ── Resource Plans ──────────────────────────────────────────────────
+
+    ResourcePlanEntry:
+      type: object
+      properties:
+        employee_id:
+          type: string
+        employee_name:
+          type: string
+        role:
+          type: string
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+
+    ResourcePlan:
+      type: object
+      properties:
+        project_id:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourcePlanEntry"
+
+    ResourcePlanUpdate:
+      type: object
+      required: [employee_id, role, allocation_pct, start_date]
+      properties:
+        employee_id:
+          type: string
+        employee_name:
+          type: string
+        role:
+          type: string
+        allocation_pct:
+          type: integer
+        start_date:
+          type: string
+          format: date
+
+paths:
+
+  # ── Projects ──────────────────────────────────────────────────────────
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [Projects]
+      summary: List all projects.
+      parameters:
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  total:
+                    type: integer
+
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [Projects]
+      summary: Retrieve a single project by ID.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/search:
+    post:
+      operationId: searchProjects
+      tags: [Projects]
+      summary: Search projects by name, department, or status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectSearchRequest"
+      responses:
+        "200":
+          description: Matching projects.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSearchResult"
+
+  /projects/{projectId}/staffing-gaps:
+    get:
+      operationId: getStaffingGaps
+      tags: [Projects]
+      summary: Get unfilled positions and skill needs for a project.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Staffing gaps.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffingGapsResult"
+
+  # ── Employees ─────────────────────────────────────────────────────────
+
+  /employees:
+    get:
+      operationId: listEmployees
+      tags: [Employees]
+      summary: List all employees, optionally filtered by department or status.
+      parameters:
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Employee list.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeSearchResult"
+
+  /employees/{employeeId}:
+    get:
+      operationId: getEmployee
+      tags: [Employees]
+      summary: Get employee details.
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Employee details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+
+  /employees/search:
+    post:
+      operationId: searchEmployees
+      tags: [Employees]
+      summary: Search employees by skills, department, seniority, or role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeSearchRequest"
+      responses:
+        "200":
+          description: Matching employees.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeSearchResult"
+
+  /employees/{employeeId}/skills:
+    get:
+      operationId: getEmployeeSkills
+      tags: [Employees]
+      summary: Get skill profile with proficiency levels for an employee.
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Skill profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillProfile"
+
+  # ── Availability ──────────────────────────────────────────────────────
+
+  /employees/{employeeId}/availability:
+    get:
+      operationId: getEmployeeAvailability
+      tags: [Availability]
+      summary: Get current allocation and availability for an employee.
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityRecord"
+
+  /availability/batch-check:
+    post:
+      operationId: batchCheckAvailability
+      tags: [Availability]
+      summary: Check availability for multiple employees at once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchAvailabilityRequest"
+      responses:
+        "200":
+          description: Batch availability results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchAvailabilityResult"
+
+  /employees/{employeeId}/schedule:
+    get:
+      operationId: getEmployeeSchedule
+      tags: [Availability]
+      summary: Get full schedule including PTO, project commitments, and blackout dates.
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Schedule entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleResult"
+
+  # ── Assignments ───────────────────────────────────────────────────────
+
+  /assignments/validate:
+    post:
+      operationId: validateAssignment
+      tags: [Assignments]
+      summary: Validate a proposed assignment without creating it (dry-run).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentValidateRequest"
+      responses:
+        "200":
+          description: Validation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignmentValidateResult"
+
+  /assignments:
+    post:
+      operationId: createAssignment
+      tags: [Assignments]
+      summary: Create a new resource assignment.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentCreateRequest"
+      responses:
+        "201":
+          description: Created assignment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+  /assignments/{assignmentId}:
+    get:
+      operationId: getAssignment
+      tags: [Assignments]
+      summary: Retrieve assignment details.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Assignment details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+    put:
+      operationId: updateAssignment
+      tags: [Assignments]
+      summary: Update an existing assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentUpdateRequest"
+      responses:
+        "200":
+          description: Updated assignment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+    delete:
+      operationId: cancelAssignment
+      tags: [Assignments]
+      summary: Cancel an assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancelled assignment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+  # ── Notifications ─────────────────────────────────────────────────────
+
+  /notifications/send:
+    post:
+      operationId: sendNotification
+      tags: [Notifications]
+      summary: Send notifications to stakeholders.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSendRequest"
+      responses:
+        "201":
+          description: Notification sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/{notificationId}:
+    get:
+      operationId: getNotification
+      tags: [Notifications]
+      summary: Check notification delivery status.
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notification status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # ── Resource Plans ────────────────────────────────────────────────────
+
+  /projects/{projectId}/resource-plan:
+    get:
+      operationId: getResourcePlan
+      tags: [ResourcePlans]
+      summary: Get the current resource plan for a project.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resource plan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourcePlan"
+
+    put:
+      operationId: updateResourcePlan
+      tags: [ResourcePlans]
+      summary: Add a resource to the project plan.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourcePlanUpdate"
+      responses:
+        "200":
+          description: Updated resource plan.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourcePlan"
