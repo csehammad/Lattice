@@ -9,7 +9,6 @@ from lattice.audit.sinks import (
 )
 from lattice.audit.trail import AuditRecord, AuditTrail, StepRecord
 
-
 # ---------------------------------------------------------------------------
 # StepRecord / AuditRecord (unchanged)
 # ---------------------------------------------------------------------------

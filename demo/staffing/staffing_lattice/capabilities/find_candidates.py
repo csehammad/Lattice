@@ -1,54 +1,44 @@
-from lattice import capability, step, state, projection
-from lattice.failure import retry, soft_failure, hard_failure, abort
+from lattice import capability, projection, state, step
+from lattice.failure import retry, soft_failure
 
 
 @capability(
     name="FindCandidates",
     version="1.0",
-    inputs={"project_name": str, "role": str, "required_skills": list, "department": str, "start_date": str, "duration_weeks": int},
+    inputs={
+        "role": str,
+        "required_skills": list,
+        "department": str,
+        "start_date": str,
+        "duration_weeks": int,
+    },
     projection={
-        "project_id": {"type": str, "example": "PROJ-4501",
-                       "description": "Resolved project identifier"},
-        "candidates": {"type": list, "example": [{"candidate_id": "EMP-1024", "name": "Alice Chen", "role_fit_score": 92, "availability_pct": 80}],
-                       "description": "Ranked list of candidates with fit scores, availability, rates, and conflict flags"},
+        "candidates": {
+            "type": list,
+            "example": [
+                {"candidate_id": "EMP-1024", "name": "Alice Chen",
+                 "role_fit_score": 92, "availability_pct": 80},
+            ],
+            "description": (
+                "Ranked list of candidates with fit scores, "
+                "availability, rates, and conflict flags"
+            ),
+        },
         "total_found": {"type": int, "example": 4,
                         "description": "Total candidates matching base criteria"},
-        "recommendation": {"type": dict, "example": {"candidate_id": "EMP-1024", "rationale": "Highest fit score, no conflicts"},
-                           "description": "System top recommendation with reasoning"},
-        "project_urgency": {"type": str, "example": "high",
-                            "description": "Staffing urgency for the project (low, medium, high, critical)"},
-        "decision_required": {"type": bool, "example": True,
-                              "description": "Whether a human/agent decision is needed before proceeding to assignment"},
+        "recommendation": {
+            "type": dict,
+            "example": {"candidate_id": "EMP-1024", "rationale": "Highest fit score, no conflicts"},
+            "description": "Top recommendation with reasoning",
+        },
+        "decision_required": {
+            "type": bool,
+            "example": True,
+            "description": "Whether a human decision is needed before proceeding to assignment",
+        },
     },
 )
 async def find_candidates(ctx):
-
-    @step(depends_on=[], scope="project.read")
-    @retry(max=3, backoff="exponential", on=[TimeoutError])
-    @hard_failure(on_exhausted=abort)
-    async def resolve_project():
-        client = ctx.client("project_api")
-        result = await client.search(name=ctx.intent.project_name)
-        projects = result.get("projects", [])
-        if not projects:
-            raise ValueError(f"Project '{ctx.intent.project_name}' not found")
-        project = projects[0]
-        gaps_result = await client.staffing_gaps(project["id"])
-        gaps = gaps_result.get("gaps", [])
-        urgency = "low"
-        for g in gaps:
-            if g.get("priority") == "critical":
-                urgency = "critical"
-                break
-            elif g.get("priority") == "high":
-                urgency = "high"
-        return {
-            "project_id": project["id"],
-            "project_name": project["name"],
-            "tech_stack": project.get("tech_stack", []),
-            "gaps": gaps,
-            "urgency": urgency,
-        }
 
     @step(depends_on=[], scope="hr.read")
     @retry(max=3, backoff="exponential", on=[TimeoutError])
@@ -80,23 +70,34 @@ async def find_candidates(ctx):
             avail_map[rec["employee_id"]] = rec
         return {"availability": avail_map}
 
-    @step(depends_on=[resolve_project, check_availability])
+    @step(depends_on=[search_resource_pool, check_availability])
     async def score_and_rank():
-        tech_stack = set(s.casefold() for s in state.resolve_project.tech_stack)
+        required_skills = set(s.casefold() for s in ctx.intent.required_skills)
         employees = state.search_resource_pool.employees
         skill_profiles = state.search_resource_pool.skill_profiles
         avail_map = state.check_availability.availability
+
+        # Role match: keywords from the requested role (ignore short words)
+        requested_role_words = {
+            w.casefold() for w in ctx.intent.role.split() if len(w) > 2
+        }
 
         scored = []
         for emp in employees:
             emp_skills = skill_profiles.get(emp["id"], [])
             emp_skill_names = {s["name"].casefold() for s in emp_skills}
-            matched = tech_stack & emp_skill_names
-            requirements_met = int(100 * len(matched) / len(tech_stack)) if tech_stack else 0
+            matched = required_skills & emp_skill_names
+            requirements_met = (
+                int(100 * len(matched) / len(required_skills))
+                if required_skills else 0
+            )
 
             avg_prof = 0
             if emp_skills:
-                matching_profs = [s["proficiency"] for s in emp_skills if s["name"].casefold() in tech_stack]
+                matching_profs = [
+                    s["proficiency"] for s in emp_skills
+                    if s["name"].casefold() in required_skills
+                ]
                 avg_prof = sum(matching_profs) / len(matching_profs) if matching_profs else 0
 
             ratings = emp.get("past_project_ratings", [])
@@ -106,11 +107,21 @@ async def find_candidates(ctx):
             allocation = avail.get("allocation_pct", 0)
             availability_pct = 100 - allocation
 
+            # Role alignment: fraction of requested role keywords in candidate's role
+            candidate_role_words = {
+                w.casefold() for w in emp.get("current_role", "").split() if len(w) > 2
+            }
+            role_match = (
+                len(requested_role_words & candidate_role_words) / len(requested_role_words)
+                if requested_role_words else 0.5
+            )
+
             fit_score = int(
-                requirements_met * 0.4
+                requirements_met * 0.35
                 + avg_prof * 10
                 + avg_rating * 5
                 + availability_pct * 0.1
+                + role_match * 25
             )
 
             scored.append({
@@ -119,9 +130,11 @@ async def find_candidates(ctx):
                 "current_role": emp.get("current_role", ""),
                 "role_fit_score": min(fit_score, 100),
                 "availability_pct": availability_pct,
+                "max_safe_allocation_pct": int(availability_pct),
                 "hourly_rate": emp.get("hourly_rate", 0.0),
                 "past_project_ratings": ratings,
                 "avg_rating": avg_rating,
+                "skills_matched": list(matched),
                 "project_requirements_met_pct": requirements_met,
                 "conflict_flags": [],
             })
@@ -142,7 +155,7 @@ async def find_candidates(ctx):
                 if entry.get("type") == "pto":
                     flags.append(f"pto:{entry.get('start_date', '?')}-{entry.get('end_date', '?')}")
                 elif entry.get("type") == "project" and entry.get("allocation_pct", 0) > 0:
-                    desc = entry.get("description", "other project")
+                    desc = entry.get("description", "other work")
                     flags.append(f"committed:{desc}")
             candidate["conflict_flags"] = flags
         return {"candidates_with_conflicts": candidates}
@@ -160,13 +173,11 @@ async def find_candidates(ctx):
             rationale_parts.append(f"top-tier ratings ({top['avg_rating']})")
 
     return projection(
-        project_id=state.resolve_project.project_id,
         candidates=candidates,
         total_found=len(candidates),
         recommendation={
             "candidate_id": top["candidate_id"] if top else None,
             "rationale": ", ".join(rationale_parts) if rationale_parts else "no candidates found",
         },
-        project_urgency=state.resolve_project.urgency,
         decision_required=True,
     )

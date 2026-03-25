@@ -30,19 +30,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 os.environ.setdefault("STAFFING_API_URL", "http://localhost:8001")
 
-from staffing_lattice.capabilities.find_candidates import find_candidates
+from rich.console import Console
+from rich.panel import Panel
+from rich.rule import Rule
+from rich.table import Table
 from staffing_lattice.capabilities.assign_resource import assign_resource
+from staffing_lattice.capabilities.find_candidates import find_candidates
 from staffing_lattice.stubs import client_factory
 
 from lattice.auth.scopes import CredentialStore
 from lattice.runtime.engine import Engine
 from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.rule import Rule
-from rich import print_json
 
 console = Console()
 
@@ -369,7 +367,7 @@ async def run_test() -> bool:
 
     for turn in SCRIPTED_CONVERSATION:
         if turn.get("conditional") and find_candidates_done:
-            console.print(f"[dim]  (skipping conditional turn — Phase 1 already succeeded)[/dim]\n")
+            console.print("[dim]  (skipping conditional turn — Phase 1 already succeeded)[/dim]\n")
             continue
 
         console.print(Rule(f"[bold]{turn['label']}[/bold]"))
@@ -396,7 +394,7 @@ async def run_test() -> bool:
         fc_proj = fc_projs[0]["projection"]
         fc_errors = validate_find_candidates(fc_proj)
         if fc_errors:
-            console.print(f"[red]FindCandidates validation FAILED:[/red]")
+            console.print("[red]FindCandidates validation FAILED:[/red]")
             for e in fc_errors:
                 console.print(f"  [red]- {e}[/red]")
             all_passed = False
@@ -416,7 +414,7 @@ async def run_test() -> bool:
         ar_proj = ar_projs[0]["projection"]
         ar_errors = validate_assign_resource(ar_proj)
         if ar_errors:
-            console.print(f"[red]AssignResource validation FAILED:[/red]")
+            console.print("[red]AssignResource validation FAILED:[/red]")
             for e in ar_errors:
                 console.print(f"  [red]- {e}[/red]")
             all_passed = False

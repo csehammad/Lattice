@@ -1,5 +1,5 @@
-from lattice import capability, step, state, projection
-from lattice.failure import retry, soft_failure, hard_failure, abort
+from lattice import capability, projection, state, step
+from lattice.failure import abort, hard_failure, retry, soft_failure
 
 
 @capability(

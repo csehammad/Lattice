@@ -42,6 +42,9 @@ coverage.xml
 *.env
 api.env
 
+# Internal working docs (entire tree — not part of the published repo)
+.internals/
+
 # OS
 .DS_Store
 Thumbs.db

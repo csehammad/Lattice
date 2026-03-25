@@ -13,19 +13,17 @@ from staffing_lattice.clients import (
     AvailabilityClient,
     EmployeeClient,
     NotificationClient,
-    ProjectClient,
-    ProjectPlanClient,
 )
 
-STAFFING_API_URL = os.environ.get("STAFFING_API_URL", "http://localhost:8001")
+# Default to IPv4 loopback so httpx matches an embedded API bound to 0.0.0.0:8001
+# (some systems resolve "localhost" to ::1 first, which would miss a v4-only listener).
+STAFFING_API_URL = os.environ.get("STAFFING_API_URL", "http://127.0.0.1:8001")
 
 _CLIENTS: dict = {
-    "project_api": ProjectClient(STAFFING_API_URL),
     "employee_api": EmployeeClient(STAFFING_API_URL),
     "availability_api": AvailabilityClient(STAFFING_API_URL),
     "assignment_api": AssignmentClient(STAFFING_API_URL),
     "notification_api": NotificationClient(STAFFING_API_URL),
-    "project_plan_api": ProjectPlanClient(STAFFING_API_URL),
 }
 
 

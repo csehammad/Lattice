@@ -28,26 +28,11 @@ import sys
 import time
 from pathlib import Path
 
-import httpx
-from staffing_lattice.capabilities.find_candidates import find_candidates
-from staffing_lattice.capabilities.assign_resource import assign_resource
-from staffing_lattice.capabilities.view_project_staffing import view_project_staffing
-from staffing_lattice.capabilities.view_employee_workload import view_employee_workload
-from staffing_lattice.capabilities.update_assignment import update_assignment
-from staffing_lattice.capabilities.cancel_assignment import cancel_assignment
-from staffing_lattice.stubs import STAFFING_API_URL, client_factory
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-
-from lattice.auth.scopes import CredentialStore
-from lattice.runtime.engine import Engine
-from lattice.runtime.registry import CapabilityRegistry, LazyRegistry
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 
-def _load_env_file(path: Path) -> None:
+def _merge_env_file(path: Path) -> None:
     if not path.exists():
         return
     for line in path.read_text().splitlines():
@@ -57,11 +42,32 @@ def _load_env_file(path: Path) -> None:
         key, _, value = line.partition("=")
         key = key.strip()
         value = value.strip()
-        if key and key not in os.environ:
+        if key and value:
             os.environ[key] = value
 
 
-_load_env_file(Path(__file__).parent / "api.env")
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_merge_env_file(_REPO_ROOT / "api.env")
+_merge_env_file(Path(__file__).parent / "api.env")
+_merge_env_file(Path(__file__).parent.parent / "hr" / "api.env")
+
+import httpx  # noqa: E402
+from rich.console import Console  # noqa: E402
+from rich.panel import Panel  # noqa: E402
+from rich.table import Table  # noqa: E402
+from staffing_lattice.capabilities.assign_resource import assign_resource  # noqa: E402
+from staffing_lattice.capabilities.cancel_assignment import cancel_assignment  # noqa: E402
+from staffing_lattice.capabilities.find_candidates import find_candidates  # noqa: E402
+from staffing_lattice.capabilities.update_assignment import update_assignment  # noqa: E402
+from staffing_lattice.capabilities.view_employee_workload import (  # noqa: E402
+    view_employee_workload,
+)
+from staffing_lattice.capabilities.view_project_staffing import view_project_staffing  # noqa: E402
+from staffing_lattice.stubs import STAFFING_API_URL, client_factory  # noqa: E402
+
+from lattice.auth.scopes import CredentialStore  # noqa: E402
+from lattice.runtime.engine import Engine  # noqa: E402
+from lattice.runtime.registry import CapabilityRegistry, LazyRegistry  # noqa: E402
 
 console = Console()
 
@@ -80,7 +86,10 @@ STAFFING_SCOPES = {
 }
 
 _PROMPT_PATH = Path(__file__).parent / "SYSTEM_PROMPT.txt"
-SYSTEM_PROMPT = _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else "You are a staffing assistant."
+SYSTEM_PROMPT = (
+    _PROMPT_PATH.read_text() if _PROMPT_PATH.exists()
+    else "You are a staffing assistant."
+)
 
 
 _ALL_CAPABILITIES = [

@@ -1,92 +1,24 @@
 """Staffing Platform API — in-memory FastAPI implementation.
 
-20 REST endpoints covering projects, employees, availability,
-assignments, notifications, and resource plans.  All data lives
-in module-level dicts so the service is fully self-contained
+REST endpoints covering employees, availability, assignments, and notifications.
+All data lives in module-level dicts so the service is fully self-contained
 with no database dependency.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(
     title="Staffing Platform API",
-    version="1.0.0",
+    version="2.0.0",
     description="In-memory staffing platform used by the Lattice capability demo.",
 )
 
 # ── Seed data ──────────────────────────────────────────────────────────────
-
-PROJECTS: dict[str, dict] = {
-    "PROJ-4501": {
-        "id": "PROJ-4501",
-        "name": "Phoenix",
-        "department": "Engineering",
-        "status": "active",
-        "tech_stack": ["Python", "PostgreSQL", "Kubernetes", "Redis"],
-        "team_size": 6,
-        "start_date": "2026-01-15",
-        "end_date": "2026-09-30",
-    },
-    "PROJ-4502": {
-        "id": "PROJ-4502",
-        "name": "Atlas",
-        "department": "Data Science",
-        "status": "active",
-        "tech_stack": ["Python", "PyTorch", "Spark", "Airflow"],
-        "team_size": 4,
-        "start_date": "2026-02-01",
-        "end_date": "2026-08-31",
-    },
-    "PROJ-4503": {
-        "id": "PROJ-4503",
-        "name": "Horizon",
-        "department": "Engineering",
-        "status": "planning",
-        "tech_stack": ["React", "TypeScript", "GraphQL", "Node.js"],
-        "team_size": 5,
-        "start_date": "2026-04-01",
-        "end_date": "2026-12-31",
-    },
-}
-
-STAFFING_GAPS: dict[str, list[dict]] = {
-    "PROJ-4501": [
-        {
-            "role": "Senior Backend Engineer",
-            "required_skills": ["Python", "PostgreSQL", "Kubernetes"],
-            "priority": "high",
-            "open_since": "2026-02-15",
-        },
-        {
-            "role": "DevOps Engineer",
-            "required_skills": ["Kubernetes", "Terraform", "AWS"],
-            "priority": "medium",
-            "open_since": "2026-03-01",
-        },
-    ],
-    "PROJ-4502": [
-        {
-            "role": "ML Engineer",
-            "required_skills": ["Python", "PyTorch", "Spark"],
-            "priority": "critical",
-            "open_since": "2026-02-10",
-        },
-    ],
-    "PROJ-4503": [
-        {
-            "role": "Senior Frontend Engineer",
-            "required_skills": ["React", "TypeScript", "GraphQL"],
-            "priority": "high",
-            "open_since": "2026-03-15",
-        },
-    ],
-}
 
 EMPLOYEES: dict[str, dict] = {
     "EMP-1024": {
@@ -206,42 +138,35 @@ SKILLS: dict[str, list[dict]] = {
     ],
 }
 
-# Existing assignments that affect availability.
 AVAILABILITY: dict[str, dict] = {
     "EMP-1024": {
         "employee_id": "EMP-1024",
         "allocation_pct": 20,
-        "current_projects": ["PROJ-4502"],
         "available_from": "2026-03-01",
     },
     "EMP-2187": {
         "employee_id": "EMP-2187",
         "allocation_pct": 0,
-        "current_projects": [],
         "available_from": "2026-03-01",
     },
     "EMP-3042": {
         "employee_id": "EMP-3042",
         "allocation_pct": 40,
-        "current_projects": ["PROJ-4502"],
         "available_from": "2026-04-15",
     },
     "EMP-4511": {
         "employee_id": "EMP-4511",
         "allocation_pct": 0,
-        "current_projects": [],
         "available_from": "2026-03-01",
     },
     "EMP-5290": {
         "employee_id": "EMP-5290",
         "allocation_pct": 80,
-        "current_projects": ["PROJ-4502"],
         "available_from": "2026-06-01",
     },
     "EMP-6100": {
         "employee_id": "EMP-6100",
         "allocation_pct": 50,
-        "current_projects": ["PROJ-4501"],
         "available_from": "2026-03-01",
     },
 }
@@ -250,7 +175,7 @@ SCHEDULES: dict[str, list[dict]] = {
     "EMP-1024": [
         {
             "type": "project",
-            "description": "Atlas — data pipeline support",
+            "description": "data pipeline support",
             "start_date": "2026-01-15",
             "end_date": "2026-05-30",
             "allocation_pct": 20,
@@ -260,7 +185,7 @@ SCHEDULES: dict[str, list[dict]] = {
     "EMP-3042": [
         {
             "type": "project",
-            "description": "Atlas — frontend dashboard",
+            "description": "frontend dashboard work",
             "start_date": "2026-02-01",
             "end_date": "2026-04-15",
             "allocation_pct": 40,
@@ -277,7 +202,7 @@ SCHEDULES: dict[str, list[dict]] = {
     "EMP-5290": [
         {
             "type": "project",
-            "description": "Atlas — model training",
+            "description": "ML model training",
             "start_date": "2026-02-01",
             "end_date": "2026-08-31",
             "allocation_pct": 80,
@@ -286,7 +211,7 @@ SCHEDULES: dict[str, list[dict]] = {
     "EMP-6100": [
         {
             "type": "project",
-            "description": "Phoenix — infrastructure",
+            "description": "infrastructure work",
             "start_date": "2026-01-15",
             "end_date": "2026-06-30",
             "allocation_pct": 50,
@@ -296,41 +221,6 @@ SCHEDULES: dict[str, list[dict]] = {
 
 ASSIGNMENTS: dict[str, dict] = {}
 NOTIFICATIONS: dict[str, dict] = {}
-RESOURCE_PLANS: dict[str, list[dict]] = {
-    "PROJ-4501": [
-        {
-            "employee_id": "EMP-6100",
-            "employee_name": "Raj Patel",
-            "role": "DevOps Engineer",
-            "allocation_pct": 50,
-            "start_date": "2026-01-15",
-        },
-    ],
-    "PROJ-4502": [
-        {
-            "employee_id": "EMP-1024",
-            "employee_name": "Alice Chen",
-            "role": "Backend Support",
-            "allocation_pct": 20,
-            "start_date": "2026-01-15",
-        },
-        {
-            "employee_id": "EMP-3042",
-            "employee_name": "Priya Sharma",
-            "role": "Frontend Developer",
-            "allocation_pct": 40,
-            "start_date": "2026-02-01",
-        },
-        {
-            "employee_id": "EMP-5290",
-            "employee_name": "Dana Kim",
-            "role": "ML Engineer",
-            "allocation_pct": 80,
-            "start_date": "2026-02-01",
-        },
-    ],
-    "PROJ-4503": [],
-}
 
 _counters: dict[str, int] = {
     "assignment": 48290,
@@ -350,17 +240,11 @@ def _normalize(value: str) -> str:
 # ── Request / response models ──────────────────────────────────────────────
 
 
-class ProjectSearchRequest(BaseModel):
-    name: Optional[str] = None
-    department: Optional[str] = None
-    status: Optional[str] = None
-
-
 class EmployeeSearchRequest(BaseModel):
-    skills: Optional[List[str]] = None
-    department: Optional[str] = None
-    seniority: Optional[str] = None
-    role: Optional[str] = None
+    skills: list[str] | None = None
+    department: str | None = None
+    seniority: str | None = None
+    role: str | None = None
 
 
 class BatchAvailabilityRequest(BaseModel):
@@ -369,15 +253,13 @@ class BatchAvailabilityRequest(BaseModel):
 
 class AssignmentValidateRequest(BaseModel):
     employee_id: str
-    project_id: str
     allocation_pct: int
     start_date: str
-    role: Optional[str] = None
+    role: str | None = None
 
 
 class AssignmentCreateRequest(BaseModel):
     employee_id: str
-    project_id: str
     allocation_pct: int
     start_date: str
     role: str
@@ -385,23 +267,15 @@ class AssignmentCreateRequest(BaseModel):
 
 
 class AssignmentUpdateRequest(BaseModel):
-    allocation_pct: Optional[int] = None
-    start_date: Optional[str] = None
-    status: Optional[str] = None
+    allocation_pct: int | None = None
+    start_date: str | None = None
+    status: str | None = None
 
 
 class NotificationSendRequest(BaseModel):
     recipients: list[str]
     message_type: str
     details: dict
-
-
-class ResourcePlanUpdateRequest(BaseModel):
-    employee_id: str
-    employee_name: Optional[str] = None
-    role: str
-    allocation_pct: int
-    start_date: str
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
@@ -412,57 +286,11 @@ def health():
     return {"status": "ok"}
 
 
-# ── Projects (4) ───────────────────────────────────────────────────────────
-
-
-@app.get("/projects")
-def list_projects(department: Optional[str] = None, status: Optional[str] = None):
-    result = list(PROJECTS.values())
-    if department:
-        result = [p for p in result if _normalize(p["department"]) == _normalize(department)]
-    if status:
-        result = [p for p in result if p["status"] == status]
-    return {"projects": result, "total": len(result)}
-
-
-@app.get("/projects/{project_id}")
-def get_project(project_id: str):
-    if project_id not in PROJECTS:
-        raise HTTPException(404, f"Project {project_id} not found")
-    return PROJECTS[project_id]
-
-
-@app.post("/projects/search")
-def search_projects(body: ProjectSearchRequest):
-    result = list(PROJECTS.values())
-    if body.name:
-        wanted = _normalize(body.name)
-        result = [
-            p for p in result
-            if wanted in _normalize(p["name"])
-            or _normalize(p["name"]) in wanted
-            or wanted in _normalize(p["id"])
-        ]
-    if body.department:
-        wanted = _normalize(body.department)
-        result = [p for p in result if _normalize(p["department"]) == wanted]
-    if body.status:
-        result = [p for p in result if p["status"] == body.status]
-    return {"projects": result, "total": len(result)}
-
-
-@app.get("/projects/{project_id}/staffing-gaps")
-def get_staffing_gaps(project_id: str):
-    if project_id not in PROJECTS:
-        raise HTTPException(404, f"Project {project_id} not found")
-    return {"project_id": project_id, "gaps": STAFFING_GAPS.get(project_id, [])}
-
-
 # ── Employees (4) ──────────────────────────────────────────────────────────
 
 
 @app.get("/employees")
-def list_employees(department: Optional[str] = None, status: Optional[str] = None):
+def list_employees(department: str | None = None, status: str | None = None):
     result = list(EMPLOYEES.values())
     if department:
         wanted = _normalize(department)
@@ -520,7 +348,6 @@ def get_employee_availability(employee_id: str):
         {
             "employee_id": employee_id,
             "allocation_pct": 0,
-            "current_projects": [],
             "available_from": "2026-03-01",
         },
     )
@@ -536,7 +363,6 @@ def batch_check_availability(body: BatchAvailabilityRequest):
                 {
                     "employee_id": eid,
                     "allocation_pct": 0,
-                    "current_projects": [],
                     "available_from": "2026-03-01",
                 },
             )
@@ -558,6 +384,8 @@ def get_employee_schedule(employee_id: str):
 def validate_assignment(body: AssignmentValidateRequest):
     conflicts: list[str] = []
     warnings: list[str] = []
+    if body.employee_id not in EMPLOYEES:
+        conflicts.append(f"Employee {body.employee_id} not found")
     avail = AVAILABILITY.get(body.employee_id)
     if avail:
         total = avail["allocation_pct"] + body.allocation_pct
@@ -567,13 +395,7 @@ def validate_assignment(body: AssignmentValidateRequest):
                 f"requested {body.allocation_pct}% = {total}%"
             )
         elif total > 80:
-            warnings.append(
-                f"High allocation: total would be {total}%"
-            )
-    if body.project_id not in PROJECTS:
-        conflicts.append(f"Project {body.project_id} not found")
-    if body.employee_id not in EMPLOYEES:
-        conflicts.append(f"Employee {body.employee_id} not found")
+            warnings.append(f"High allocation: total would be {total}%")
     return {"valid": len(conflicts) == 0, "conflicts": conflicts, "warnings": warnings}
 
 
@@ -581,15 +403,12 @@ def validate_assignment(body: AssignmentValidateRequest):
 def create_assignment(body: AssignmentCreateRequest):
     if body.employee_id not in EMPLOYEES:
         raise HTTPException(404, f"Employee {body.employee_id} not found")
-    if body.project_id not in PROJECTS:
-        raise HTTPException(404, f"Project {body.project_id} not found")
     emp = EMPLOYEES[body.employee_id]
     asgn_id = _next_id("ASGN-", "assignment")
     assignment = {
         "assignment_id": asgn_id,
         "employee_id": body.employee_id,
         "employee_name": f"{emp['first_name']} {emp['last_name']}",
-        "project_id": body.project_id,
         "role": body.role,
         "allocation_pct": body.allocation_pct,
         "start_date": body.start_date,
@@ -597,12 +416,9 @@ def create_assignment(body: AssignmentCreateRequest):
         "created_at": datetime.utcnow().isoformat(),
     }
     ASSIGNMENTS[asgn_id] = assignment
-
     avail = AVAILABILITY.get(body.employee_id)
     if avail:
         avail["allocation_pct"] += body.allocation_pct
-        if body.project_id not in avail["current_projects"]:
-            avail["current_projects"].append(body.project_id)
     return assignment
 
 
@@ -658,34 +474,3 @@ def get_notification(notification_id: str):
     if notification_id not in NOTIFICATIONS:
         raise HTTPException(404, f"Notification {notification_id} not found")
     return NOTIFICATIONS[notification_id]
-
-
-# ── Resource Plans (2) ─────────────────────────────────────────────────────
-
-
-@app.get("/projects/{project_id}/resource-plan")
-def get_resource_plan(project_id: str):
-    if project_id not in PROJECTS:
-        raise HTTPException(404, f"Project {project_id} not found")
-    return {
-        "project_id": project_id,
-        "resources": RESOURCE_PLANS.get(project_id, []),
-    }
-
-
-@app.put("/projects/{project_id}/resource-plan")
-def update_resource_plan(project_id: str, body: ResourcePlanUpdateRequest):
-    if project_id not in PROJECTS:
-        raise HTTPException(404, f"Project {project_id} not found")
-    entry = {
-        "employee_id": body.employee_id,
-        "employee_name": body.employee_name or body.employee_id,
-        "role": body.role,
-        "allocation_pct": body.allocation_pct,
-        "start_date": body.start_date,
-    }
-    RESOURCE_PLANS.setdefault(project_id, []).append(entry)
-    return {
-        "project_id": project_id,
-        "resources": RESOURCE_PLANS[project_id],
-    }
