@@ -9,17 +9,31 @@ from lattice.failure import abort, hard_failure, retry, soft_failure
     version="1.0",
     inputs={"employee_name": str},
     projection={
-        "employee_name": {"type": str, "example": "Alice Chen",
-                          "description": "Full name of the employee"},
-        "current_role": {"type": str, "example": "Senior Backend Engineer",
-                         "description": "Employee current role"},
-        "skills": {"type": list, "example": [{"skill": "Python", "proficiency": "expert"}],
-                   "description": "Skill profile with proficiency levels"},
-        "availability_pct": {"type": int, "example": 60,
-                             "description": "Current availability percentage"},
-        "schedule": {"type": dict,
-                     "example": {"current_projects": ["Phoenix"], "pto": []},
-                     "description": "Current schedule including project commitments and PTO"},
+        "employee_name": {
+            "type": str,
+            "example": "Alice Chen",
+            "description": "Full name of the employee",
+        },
+        "current_role": {
+            "type": str,
+            "example": "Senior Backend Engineer",
+            "description": "Employee current role",
+        },
+        "skills": {
+            "type": list,
+            "example": [{"skill": "Python", "proficiency": "expert"}],
+            "description": "Skill profile with proficiency levels",
+        },
+        "availability_pct": {
+            "type": int,
+            "example": 60,
+            "description": "Current availability percentage",
+        },
+        "schedule": {
+            "type": dict,
+            "example": {"current_projects": ["Phoenix"], "pto": []},
+            "description": "Current schedule including project commitments and PTO",
+        },
     },
 )
 async def view_employee_workload(ctx):

@@ -74,21 +74,25 @@ console = Console()
 MANIFEST_PATH = Path(__file__).parent / "registry.json"
 
 STAFFING_SCOPES = {
-    "project.read", "project.write",
-    "hr.read", "hr.write",
+    "project.read",
+    "project.write",
+    "hr.read",
+    "hr.write",
     "notification.write",
-    "assignments.read", "assignments.write",
+    "assignments.read",
+    "assignments.write",
     "availability.read",
     "employees.read",
-    "notifications.read", "notifications.write",
-    "projects.read", "projects.write",
+    "notifications.read",
+    "notifications.write",
+    "projects.read",
+    "projects.write",
     "resource_plans.read",
 }
 
 _PROMPT_PATH = Path(__file__).parent / "SYSTEM_PROMPT.txt"
 SYSTEM_PROMPT = (
-    _PROMPT_PATH.read_text() if _PROMPT_PATH.exists()
-    else "You are a staffing assistant."
+    _PROMPT_PATH.read_text() if _PROMPT_PATH.exists() else "You are a staffing assistant."
 )
 
 
@@ -122,6 +126,7 @@ class StaffingAgent:
 
     def _client(self):
         import openai
+
         return openai.OpenAI()
 
     async def send(self, user_message: str) -> str:

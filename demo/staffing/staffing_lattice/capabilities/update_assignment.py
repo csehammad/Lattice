@@ -12,15 +12,26 @@ from lattice.failure import abort, hard_failure, retry, soft_failure
         "start_date": str,
     },
     projection={
-        "assignment_id": {"type": str, "example": "ASGN-48292",
-                          "description": "Unique assignment identifier"},
-        "status": {"type": str, "example": "updated",
-                   "description": "Status of the assignment after update"},
-        "updated_fields": {"type": dict,
-                           "example": {"role": "Senior Backend Engineer", "allocation_pct": 80},
-                           "description": "Fields that were changed"},
-        "notification_sent": {"type": bool, "example": True,
-                              "description": "Whether stakeholders were notified of the change"},
+        "assignment_id": {
+            "type": str,
+            "example": "ASGN-48292",
+            "description": "Unique assignment identifier",
+        },
+        "status": {
+            "type": str,
+            "example": "updated",
+            "description": "Status of the assignment after update",
+        },
+        "updated_fields": {
+            "type": dict,
+            "example": {"role": "Senior Backend Engineer", "allocation_pct": 80},
+            "description": "Fields that were changed",
+        },
+        "notification_sent": {
+            "type": bool,
+            "example": True,
+            "description": "Whether stakeholders were notified of the change",
+        },
     },
 )
 async def update_assignment(ctx):

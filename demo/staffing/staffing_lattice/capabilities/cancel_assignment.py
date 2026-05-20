@@ -7,12 +7,21 @@ from lattice.failure import abort, hard_failure, retry, soft_failure
     version="1.0",
     inputs={"assignment_id": str, "notify": bool},
     projection={
-        "assignment_id": {"type": str, "example": "ASGN-48292",
-                          "description": "Unique identifier for the cancelled assignment"},
-        "status": {"type": str, "example": "cancelled",
-                   "description": "Assignment status after cancellation"},
-        "notification_sent": {"type": bool, "example": True,
-                              "description": "Whether stakeholders were notified"},
+        "assignment_id": {
+            "type": str,
+            "example": "ASGN-48292",
+            "description": "Unique identifier for the cancelled assignment",
+        },
+        "status": {
+            "type": str,
+            "example": "cancelled",
+            "description": "Assignment status after cancellation",
+        },
+        "notification_sent": {
+            "type": bool,
+            "example": True,
+            "description": "Whether stakeholders were notified",
+        },
     },
 )
 async def cancel_assignment(ctx):

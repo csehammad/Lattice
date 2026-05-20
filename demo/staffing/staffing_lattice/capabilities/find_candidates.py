@@ -16,16 +16,22 @@ from lattice.failure import retry, soft_failure
         "candidates": {
             "type": list,
             "example": [
-                {"candidate_id": "EMP-1024", "name": "Alice Chen",
-                 "role_fit_score": 92, "availability_pct": 80},
+                {
+                    "candidate_id": "EMP-1024",
+                    "name": "Alice Chen",
+                    "role_fit_score": 92,
+                    "availability_pct": 80,
+                },
             ],
             "description": (
-                "Ranked list of candidates with fit scores, "
-                "availability, rates, and conflict flags"
+                "Ranked list of candidates with fit scores, availability, rates, and conflict flags"
             ),
         },
-        "total_found": {"type": int, "example": 4,
-                        "description": "Total candidates matching base criteria"},
+        "total_found": {
+            "type": int,
+            "example": 4,
+            "description": "Total candidates matching base criteria",
+        },
         "recommendation": {
             "type": dict,
             "example": {"candidate_id": "EMP-1024", "rationale": "Highest fit score, no conflicts"},
@@ -78,9 +84,7 @@ async def find_candidates(ctx):
         avail_map = state.check_availability.availability
 
         # Role match: keywords from the requested role (ignore short words)
-        requested_role_words = {
-            w.casefold() for w in ctx.intent.role.split() if len(w) > 2
-        }
+        requested_role_words = {w.casefold() for w in ctx.intent.role.split() if len(w) > 2}
 
         scored = []
         for emp in employees:
@@ -88,15 +92,13 @@ async def find_candidates(ctx):
             emp_skill_names = {s["name"].casefold() for s in emp_skills}
             matched = required_skills & emp_skill_names
             requirements_met = (
-                int(100 * len(matched) / len(required_skills))
-                if required_skills else 0
+                int(100 * len(matched) / len(required_skills)) if required_skills else 0
             )
 
             avg_prof = 0
             if emp_skills:
                 matching_profs = [
-                    s["proficiency"] for s in emp_skills
-                    if s["name"].casefold() in required_skills
+                    s["proficiency"] for s in emp_skills if s["name"].casefold() in required_skills
                 ]
                 avg_prof = sum(matching_profs) / len(matching_profs) if matching_profs else 0
 
@@ -113,7 +115,8 @@ async def find_candidates(ctx):
             }
             role_match = (
                 len(requested_role_words & candidate_role_words) / len(requested_role_words)
-                if requested_role_words else 0.5
+                if requested_role_words
+                else 0.5
             )
 
             fit_score = int(
@@ -124,20 +127,22 @@ async def find_candidates(ctx):
                 + role_match * 25
             )
 
-            scored.append({
-                "candidate_id": emp["id"],
-                "name": f"{emp['first_name']} {emp['last_name']}",
-                "current_role": emp.get("current_role", ""),
-                "role_fit_score": min(fit_score, 100),
-                "availability_pct": availability_pct,
-                "max_safe_allocation_pct": int(availability_pct),
-                "hourly_rate": emp.get("hourly_rate", 0.0),
-                "past_project_ratings": ratings,
-                "avg_rating": avg_rating,
-                "skills_matched": list(matched),
-                "project_requirements_met_pct": requirements_met,
-                "conflict_flags": [],
-            })
+            scored.append(
+                {
+                    "candidate_id": emp["id"],
+                    "name": f"{emp['first_name']} {emp['last_name']}",
+                    "current_role": emp.get("current_role", ""),
+                    "role_fit_score": min(fit_score, 100),
+                    "availability_pct": availability_pct,
+                    "max_safe_allocation_pct": int(availability_pct),
+                    "hourly_rate": emp.get("hourly_rate", 0.0),
+                    "past_project_ratings": ratings,
+                    "avg_rating": avg_rating,
+                    "skills_matched": list(matched),
+                    "project_requirements_met_pct": requirements_met,
+                    "conflict_flags": [],
+                }
+            )
 
         scored.sort(key=lambda c: c["role_fit_score"], reverse=True)
         return {"scored_candidates": scored}

@@ -153,9 +153,7 @@ class AuditTrail:
         requester: str | None = None,
         status: str | None = None,
     ) -> list[AuditRecord]:
-        return self._sink.query(
-            capability=capability, requester=requester, status=status
-        )
+        return self._sink.query(capability=capability, requester=requester, status=status)
 
     @property
     def sink(self) -> AuditSink:

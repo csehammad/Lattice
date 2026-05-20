@@ -62,8 +62,10 @@ _load_env_file(Path(__file__).parent / "api.env")
 _load_env_file(Path(__file__).parent.parent / "hr" / "api.env")
 
 STAFFING_SCOPES = {
-    "project.read", "project.write",
-    "hr.read", "hr.write",
+    "project.read",
+    "project.write",
+    "hr.read",
+    "hr.write",
     "notification.write",
 }
 
@@ -155,6 +157,7 @@ def start_api_server() -> threading.Thread:
 
 def wait_for_api(url: str, timeout: int = 15) -> None:
     import httpx
+
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -174,7 +177,6 @@ def build_registry() -> LazyRegistry:
 
 
 class StaffingAgent:
-
     def __init__(self, lazy: LazyRegistry, engine: Engine, model: str = "gpt-4o") -> None:
         self.lazy = lazy
         self.engine = engine
@@ -185,6 +187,7 @@ class StaffingAgent:
 
     def _client(self):
         import openai
+
         return openai.OpenAI()
 
     async def send(self, user_message: str) -> str:
@@ -216,11 +219,13 @@ class StaffingAgent:
                 result = await self._dispatch(tc.function.name, args)
                 self._print_tool_turn(tc.function.name, args, result)
 
-                self._messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": json.dumps(result, default=str),
-                })
+                self._messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(result, default=str),
+                    }
+                )
 
         return "(agent reached max tool-call rounds)"
 
@@ -251,7 +256,8 @@ class StaffingAgent:
             creds = CredentialStore(granted_scopes=STAFFING_SCOPES)
             try:
                 result = await self.engine.execute(
-                    fn, inputs,
+                    fn,
+                    inputs,
                     credentials=creds,
                     client_factory=client_factory,
                     requester="staffing-e2e-test",
@@ -262,9 +268,7 @@ class StaffingAgent:
                 return {
                     "error": str(exc),
                     "required_inputs": manifest_entry.get("inputs", {}),
-                    "instruction": (
-                        "Fix the execute_capability payload and try again."
-                    ),
+                    "instruction": ("Fix the execute_capability payload and try again."),
                 }
         return {"error": f"unknown tool: {tool}"}
 
@@ -279,12 +283,14 @@ class StaffingAgent:
             if isinstance(result, dict) and "error" in result:
                 console.print(f"  [red]  error: {result['error']}[/red]")
             elif isinstance(result, dict):
-                console.print(Panel(
-                    json.dumps(result, indent=2, default=str),
-                    title=f"[bold cyan]{name} — projection[/bold cyan]",
-                    border_style="cyan",
-                    padding=(0, 2),
-                ))
+                console.print(
+                    Panel(
+                        json.dumps(result, indent=2, default=str),
+                        title=f"[bold cyan]{name} — projection[/bold cyan]",
+                        border_style="cyan",
+                        padding=(0, 2),
+                    )
+                )
                 self._print_audit()
 
     def _print_audit(self) -> None:
@@ -353,14 +359,16 @@ async def run_test() -> bool:
     model = os.environ.get("OPENAI_MODEL", "gpt-4o")
     agent = StaffingAgent(lazy, engine, model=model)
 
-    console.print(Panel(
-        f"[bold]Lattice Staffing Agent[/bold]\n"
-        f"Model: {model}  |  Capabilities: {len(lazy._manifest)}  |  "
-        f"API: http://localhost:8001\n\n"
-        f"Scripted conversation: two-phase flow "
-        f"(FindCandidates -> pick -> AssignResource)",
-        border_style="blue",
-    ))
+    console.print(
+        Panel(
+            f"[bold]Lattice Staffing Agent[/bold]\n"
+            f"Model: {model}  |  Capabilities: {len(lazy._manifest)}  |  "
+            f"API: http://localhost:8001\n\n"
+            f"Scripted conversation: two-phase flow "
+            f"(FindCandidates -> pick -> AssignResource)",
+            border_style="blue",
+        )
+    )
     console.print()
 
     find_candidates_done = False
@@ -453,14 +461,16 @@ async def run_test() -> bool:
 
     console.print()
     if all_passed:
-        console.print(Panel(
-            "[bold green]ALL CHECKS PASSED[/bold green]\n\n"
-            "Two-phase flow completed successfully:\n"
-            "  1. FindCandidates returned ranked candidates with decision_required=true\n"
-            "  2. Agent presented options and waited for user choice\n"
-            "  3. AssignResource confirmed the assignment with notifications",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                "[bold green]ALL CHECKS PASSED[/bold green]\n\n"
+                "Two-phase flow completed successfully:\n"
+                "  1. FindCandidates returned ranked candidates with decision_required=true\n"
+                "  2. Agent presented options and waited for user choice\n"
+                "  3. AssignResource confirmed the assignment with notifications",
+                border_style="green",
+            )
+        )
     else:
         console.print(Panel("[bold red]SOME CHECKS FAILED[/bold red]", border_style="red"))
 

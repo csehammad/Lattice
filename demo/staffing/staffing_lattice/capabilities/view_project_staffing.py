@@ -9,19 +9,24 @@ from lattice.failure import abort, hard_failure, retry, soft_failure
     version="1.0",
     inputs={"project_name": str},
     projection={
-        "project_name": {"type": str, "example": "Project Phoenix",
-                         "description": "Name of the project"},
-        "status": {"type": str, "example": "active",
-                   "description": "Current project status"},
-        "staffing_gaps": {"type": list, "example": ["Data Scientist", "UX Designer"],
-                          "description": "Unfilled positions and skill needs"},
-        "resource_plan": {"type": list,
-                          "example": [
-                              {"employee_id": "EMP-2187",
-                               "role": "Backend Engineer",
-                               "allocation_pct": 100},
-                          ],
-                          "description": "Current resource assignments for the project"},
+        "project_name": {
+            "type": str,
+            "example": "Project Phoenix",
+            "description": "Name of the project",
+        },
+        "status": {"type": str, "example": "active", "description": "Current project status"},
+        "staffing_gaps": {
+            "type": list,
+            "example": ["Data Scientist", "UX Designer"],
+            "description": "Unfilled positions and skill needs",
+        },
+        "resource_plan": {
+            "type": list,
+            "example": [
+                {"employee_id": "EMP-2187", "role": "Backend Engineer", "allocation_pct": 100},
+            ],
+            "description": "Current resource assignments for the project",
+        },
     },
 )
 async def view_project_staffing(ctx):

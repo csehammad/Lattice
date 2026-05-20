@@ -13,22 +13,46 @@ from lattice.failure import abort, hard_failure, retry, soft_failure
         "requested_by": str,
     },
     projection={
-        "assignment_id": {"type": str, "example": "ASGN-48291",
-                          "description": "Unique assignment identifier"},
-        "status": {"type": str, "example": "confirmed",
-                   "description": "Assignment status (confirmed, conflict_detected)"},
-        "candidate_name": {"type": str, "example": "Alice Chen",
-                           "description": "Name of the assigned resource"},
-        "effective_start_date": {"type": str, "example": "2026-04-01",
-                                 "description": "Confirmed start date"},
-        "allocation_confirmed_pct": {"type": int, "example": 80,
-                                     "description": "Confirmed allocation percentage"},
-        "conflict_reasons": {"type": list, "example": [],
-                             "description": "Conflict reasons if status is conflict_detected"},
-        "notifications_sent": {"type": list, "example": ["candidate", "manager"],
-                               "description": "Stakeholders notified"},
-        "follow_up_actions": {"type": list, "example": ["schedule_onboarding_sync"],
-                              "description": "Recommended next actions"},
+        "assignment_id": {
+            "type": str,
+            "example": "ASGN-48291",
+            "description": "Unique assignment identifier",
+        },
+        "status": {
+            "type": str,
+            "example": "confirmed",
+            "description": "Assignment status (confirmed, conflict_detected)",
+        },
+        "candidate_name": {
+            "type": str,
+            "example": "Alice Chen",
+            "description": "Name of the assigned resource",
+        },
+        "effective_start_date": {
+            "type": str,
+            "example": "2026-04-01",
+            "description": "Confirmed start date",
+        },
+        "allocation_confirmed_pct": {
+            "type": int,
+            "example": 80,
+            "description": "Confirmed allocation percentage",
+        },
+        "conflict_reasons": {
+            "type": list,
+            "example": [],
+            "description": "Conflict reasons if status is conflict_detected",
+        },
+        "notifications_sent": {
+            "type": list,
+            "example": ["candidate", "manager"],
+            "description": "Stakeholders notified",
+        },
+        "follow_up_actions": {
+            "type": list,
+            "example": ["schedule_onboarding_sync"],
+            "description": "Recommended next actions",
+        },
     },
 )
 async def assign_resource(ctx):

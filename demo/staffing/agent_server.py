@@ -83,26 +83,34 @@ from lattice.runtime.engine import Engine  # noqa: E402
 from lattice.runtime.registry import CapabilityRegistry, LazyRegistry  # noqa: E402
 
 STAFFING_SCOPES = {
-    "project.read", "project.write",
-    "hr.read", "hr.write",
+    "project.read",
+    "project.write",
+    "hr.read",
+    "hr.write",
     "notification.write",
-    "assignments.read", "assignments.write",
+    "assignments.read",
+    "assignments.write",
     "availability.read",
     "employees.read",
-    "notifications.read", "notifications.write",
-    "projects.read", "projects.write",
+    "notifications.read",
+    "notifications.write",
+    "projects.read",
+    "projects.write",
     "resource_plans.read",
 }
 
 MANIFEST_PATH = Path(__file__).parent / "registry.json"
 PROMPT_PATH = Path(__file__).parent / "SYSTEM_PROMPT.txt"
 
+
 def _build_system_prompt() -> str:
     import datetime
+
     base = PROMPT_PATH.read_text() if PROMPT_PATH.exists() else "You are a staffing assistant."
     today = datetime.date.today()
     date_line = f"TODAY'S DATE: {today.strftime('%A, %B %d, %Y')} (ISO: {today.isoformat()})\n\n"
     return date_line + base
+
 
 SYSTEM_PROMPT = _build_system_prompt()
 
@@ -309,7 +317,8 @@ async def _dispatch(tool: str, args: dict) -> dict:
         creds = CredentialStore(granted_scopes=STAFFING_SCOPES)
         try:
             result = await _engine.execute(
-                fn, inputs,
+                fn,
+                inputs,
                 credentials=creds,
                 client_factory=client_factory,
                 requester="staffing-web-agent",
@@ -464,10 +473,12 @@ async def chat(req: ChatRequest):
                     ]
                 elif result["type"] == "projection":
                     tool_entry["capability"] = result["capability"]
-                    turn_projections.append({
-                        "capability": result["capability"],
-                        "projection": result["result"],
-                    })
+                    turn_projections.append(
+                        {
+                            "capability": result["capability"],
+                            "projection": result["result"],
+                        }
+                    )
                     if result.get("audit"):
                         turn_audit.append(result["audit"])
                 elif result["type"] == "error":
@@ -477,11 +488,13 @@ async def chat(req: ChatRequest):
                 _state.tool_calls.append(tool_entry)
 
                 content = result["result"]
-                _state.messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": json.dumps(content, default=str),
-                })
+                _state.messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(content, default=str),
+                    }
+                )
 
         return _json_chat_response(
             ChatResponse(
@@ -501,9 +514,7 @@ async def chat(req: ChatRequest):
         )
         return _json_chat_response(
             ChatResponse(
-                reply=(
-                    f"**Model request failed** ({type(exc).__name__}): {exc}\n\n{hint}"
-                ),
+                reply=(f"**Model request failed** ({type(exc).__name__}): {exc}\n\n{hint}"),
                 tool_calls=[],
                 projections=[],
                 audit=[],

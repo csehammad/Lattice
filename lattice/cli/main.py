@@ -651,9 +651,9 @@ def _build_system_prompt(manifest: dict[str, Any], domain: str) -> str:
 
         section = f"""### {name}
   Inputs:
-{chr(10).join(input_lines) if input_lines else '    (none)'}
+{chr(10).join(input_lines) if input_lines else "    (none)"}
   Projection:
-{chr(10).join(proj_lines) if proj_lines else '    (none)'}"""
+{chr(10).join(proj_lines) if proj_lines else "    (none)"}"""
         cap_sections.append(section)
 
     capabilities_block = "\n\n".join(cap_sections)
