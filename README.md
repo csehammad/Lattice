@@ -197,7 +197,7 @@ This is real Python. You can set breakpoints, unit test each step, run it in CI.
 
 ### Why projection quality matters
 
-A projection is not a return value. It is the decision surface the model reasons over and the interface through which users experience the system.
+The projection is the decision surface the model reasons over and the interface through which users experience the system. Treating it as a return value is the most common mistake.
 
 When a capability returns a projection, three things must be true:
 
@@ -233,6 +233,60 @@ That is a useful agent. It did not decode status codes. It did not guess at poli
 **The test for a good projection:** can the model explain the result, present alternatives, and act on the user's choice — without accessing any data beyond what the projection contains? If yes, the projection is well-designed. If the model needs to make additional tool calls, interpret codes, or infer meaning, the projection is leaking backend complexity.
 
 If capability names are clean but payloads still mirror raw backend outputs, the core problem remains. The projection schema is half the value of the capability pattern.
+
+### Structured errors the model can act on
+
+A common failure mode in deployed agents: the model sends bad inputs, the tool throws an unstructured exception, and the model hallucinates an apology. Lattice's agent layer catches typed exceptions and returns structured error payloads so the model can recover instead of dying.
+
+Empty inputs:
+
+```json
+{
+  "error": "Missing inputs for capability 'VendorOnboarding'",
+  "required_inputs": {"vendor_name": "str", "vendor_type": "str", "region": "str"},
+  "instruction": "Call execute_capability again with the same capability_name and a complete inputs object containing every key in required_inputs."
+}
+```
+
+Partial or wrong-typed inputs (raised as `ValidationError`):
+
+```json
+{
+  "error": "Missing required input 'vendor_type' for capability 'VendorOnboarding'",
+  "required_inputs": {"vendor_name": "str", "vendor_type": "str", "region": "str"},
+  "instruction": "Adjust inputs to match required_inputs (keys and value types), then call execute_capability again."
+}
+```
+
+Missing scope (raised as `PermissionDenied`):
+
+```json
+{
+  "error": "Step 'sanctions_check' requires scope 'compliance.read'; available scopes: set()",
+  "required_inputs": {"vendor_name": "str", "vendor_type": "str", "region": "str"},
+  "instruction": "This capability needs OAuth scopes the agent does not have. Narrow the task or use a workflow that fits the granted scopes."
+}
+```
+
+In each case the model gets the same three things: what went wrong, what the correct inputs look like, and what to do next. It can ask the user for the missing piece instead of guessing.
+
+---
+
+## Won't smarter models make this unnecessary?
+
+A reasonable objection: GPT-5 / Claude N+1 will be smart enough to handle 50 tools, decode `{"gds_error": "UC/NN1"}`, sequence calls, and recover from errors. Why move execution into a runtime?
+
+Intelligence doesn't fix the parts that matter here:
+
+- **Trust boundary.** Raw responses (PEP matches, adverse media, shell-company probabilities, patient records) shouldn't enter context regardless of how smart the model is. The less sensitive data in context, the smaller the prompt-injection / log-exposure / data-extraction surface. Smarter models can be more cleverly manipulated, not less.
+- **Cost.** Tokens are not free. A five-step workflow with raw API responses burns 3,000–5,000 context tokens on data the user never sees. More capable models cost more per token, so wasting tokens is more expensive, not less.
+- **Accountability.** With model-driven orchestration, the audit trail is the conversation log — unstructured, mixed with reasoning, and different on every run. Smarter models produce a more complex log, not a more structured one.
+- **Non-determinism.** A smarter model given 50 tools still makes different choices on different runs. That's fine for chat; in procurement or compliance, "skipped the sanctions check 1% of the time" is an incident.
+- **Surface management.** Someone still has to define, version, and audit 50 tool definitions. Adding a step inside a Lattice capability changes nothing in the model's tool surface.
+
+The "can vs. should" distinction matters here. A sufficiently smart model can manage state, sequence five API calls, and decode error codes. The questions the runtime answers are about where each piece of that work should live: credentials, intermediate state, sequencing logic, failure policy, audit record. "The model can handle it" and "the model should handle it" are different statements.
+
+The underlying mechanism is also worth naming. Attention is a finite resource. Every token in context competes for attention weight against every other token. Four thousand tokens of intermediate JSON actively degrade attention on what matters: the user's intent, the current decision point, the result to reason over. Larger context windows do not eliminate this — the "lost in the middle" problem gets worse with more capacity, not better. Lattice's design (projections instead of raw payloads, state outside context, two meta-tools instead of N, runtime-held credentials) is about what the model attends to, not about compensating for limited capability.
 
 ---
 
@@ -310,6 +364,8 @@ lattice visualize   # Review dependency graph, data flow, permissions
 lattice validate    # Test against real systems
 lattice register    # Make it available to models
 lattice run         # Test with a real intent
+lattice bind        # Connect individual steps to new APIs
+lattice prompt      # Generate an agent system prompt from a registry
 ```
 
 `lattice visualize` provides a review surface for the capability before it goes to production — dependency graph with steps as nodes, color-coded by status (automated, human task, gap), click-through to step detail, data flow overlay, projection schema, and permission view.
@@ -528,6 +584,24 @@ lattice bind --module capabilities.vendor_onboarding \
 | `--step TEXT` | Yes | Step name to bind |
 | `--to TEXT` | Yes | Target API client name |
 
+### `lattice prompt`
+
+Generate an agent system prompt from a saved registry manifest. The output teaches an LLM agent what capabilities exist, what inputs each requires, and what projections to expect — so the agent can drive the search-then-execute loop without hard-coded knowledge.
+
+```bash
+# Print the system prompt to stdout
+lattice prompt --registry .lattice.registry.json --domain procurement
+
+# Write it to a file
+lattice prompt --registry .lattice.registry.json --domain staffing -o SYSTEM_PROMPT.txt
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--registry PATH` | Yes | Path to a registry JSON (created by `lattice register` or `CapabilityRegistry.save`) |
+| `--domain TEXT` | No | Domain label inserted into the prompt (e.g. `staffing`, `procurement`) |
+| `--output, -o PATH` | No | Write the prompt to a file instead of stdout |
+
 ---
 
 ## Environment variables
@@ -571,6 +645,22 @@ from lattice.failure import retry, soft_failure, hard_failure, abort
 | `@hard_failure(on_exhausted=abort)` | Stop the entire capability when a step fails after retries |
 
 Decorator order (outermost to innermost): `@step` → `@retry` → `@soft_failure` or `@hard_failure`.
+
+### Error types
+
+```python
+from lattice.errors import LatticeError, ValidationError, PermissionDenied, AbortExecution, StepFailure
+```
+
+| Exception | When it fires |
+|-----------|---------------|
+| `LatticeError` | Base class for all Lattice errors |
+| `ValidationError` | Capability input or projection schema validation failed |
+| `PermissionDenied` | The requesting identity lacks a required scope or role |
+| `StepFailure` | A step failed after exhausting its retry policy |
+| `AbortExecution` | A `hard_failure` policy aborted the capability |
+
+The agent layer catches these typed exceptions and returns the structured error payloads shown earlier, so the model can act on them instead of receiving raw tracebacks.
 
 ### Human tasks
 
@@ -727,37 +817,66 @@ This keeps the tool surface constant regardless of registry size. The model disc
 # Set your OpenAI API key
 export OPENAI_API_KEY=sk-...
 
-# Run the interactive agent
+# Run the interactive agent (Procurement + Travel domains)
 python -m demo.agent.run_agent
 
 # Use a different model
 python -m demo.agent.run_agent --model gpt-4o-mini
+
+# Non-interactive: run one or more queries and exit (useful for CI / logs)
+python -m demo.agent.run_agent -q "Onboard Acme Corp as a supplier in the US"
+python -m demo.agent.run_agent -q "Onboard Acme Corp" -q "Procure 10 monitors for marketing"
+
+# Real interactive Procurement + Travel demo with richer audit output
+python -m demo.run_demo
 ```
 
-The full demo suite now lives under [`demo/`](demo/README.md):
-- [`demo/procurement/`](demo/procurement/README.md)
-- [`demo/travel/`](demo/travel/README.md)
-- [`demo/hr/`](demo/hr/README.md)
+The full demo suite lives under [`demo/`](demo/README.md):
+
+| Folder | Domain | Style |
+|---|---|---|
+| [`demo/procurement/`](demo/procurement/README.md) | `VendorOnboarding`, `EquipmentProcurement` | Stubbed backend clients |
+| [`demo/travel/`](demo/travel/README.md) | `TripPlanning` (8 steps internally, parallel + soft-failure) | Stubbed backend clients |
+| [`demo/hr/`](demo/hr/README.md) | `EmployeeOnboarding`, `PayrollProcessing`, `PerformanceReview` | Real FastAPI service + Docker |
+| [`demo/staffing/`](demo/staffing/README.md) | `FindCandidates`, `AssignResource`, `ViewEmployeeWorkload`, `UpdateAssignment`, `CancelAssignment` | Real FastAPI service + Docker + HTTP chat server |
+
+The HR and Staffing demos ship with a Dockerfile and `docker-compose.yml`:
+
+```bash
+cd demo/hr        # or demo/staffing
+cp api.env.example api.env   # then put your OPENAI_API_KEY in it
+docker compose up --build
+```
+
+The Staffing demo also exposes the agent over HTTP (`demo/staffing/agent_server.py`, port 8003) with a browser UI at `http://127.0.0.1:8003/`.
+
+#### Two-phase flows (`decision_required`)
+
+Some capabilities return a projection that contains a list of options instead of a final result — for example, `FindCandidates` returns ranked candidates with `decision_required: true`. The agent presents the options, the user picks one, and the agent then calls a second capability (`AssignResource`) with the chosen `candidate_id` and the `project_id` resolved by Lattice from the original `project_name`. The model never fabricates internal IDs; they come from the previous projection or are resolved inside the runtime.
 
 Example session:
 
 ```text
 You: Onboard Acme Corp as a supplier in the US
 
-  ╭─ Lattice Execution ─╮
-  │ Capability  VendorOnboarding v1.0  │
-  │ Status      completed              │
-  │ Steps       5                      │
-  │ Loaded      on demand              │
-  ╰──────────────────────╯
+  [execution] VendorOnboarding v1.0 — completed in 12ms (5 steps)
 
-Agent: Acme Corp has been successfully onboarded as a supplier in the US.
+Agent: Acme Corp has been onboarded as a supplier in the US.
        Vendor ID is V-10001, status is active. Compliance passed with a
        risk score of 15. Pending documents: W-9, insurance certificate,
        bank details.
+
+You: Book a trip from SFO to NYC on April 15, returning April 17,
+     for jane.doe@company.com in engineering
+
+  [execution] TripPlanning v1.0 — completed in 18ms (8 steps)
+
+Agent: Trip booked. Flight confirmation BK-482910, hotel HBK-193847.
+       Total cost $1,278. Policy status: compliant. Engineering budget
+       remaining: $6,722. Jane has gold loyalty tier.
 ```
 
-The agent searched the registry, found `VendorOnboarding`, extracted inputs from the user's message, executed the capability (5 steps, real code), and summarized the projection. The model never saw raw API calls, credentials, or intermediate state.
+The agent searched the registry, found the right capability, extracted inputs from the user's message, executed the capability through real code, and summarized the projection. The model never saw raw API calls, credentials, or intermediate state.
 
 ### Building your own agent
 
