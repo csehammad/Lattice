@@ -883,6 +883,8 @@ Early-stage design and specification. Current implementation work focuses on pro
 
 ## Further reading
 
+- [The Missing Runtime Between AI Agents and Enterprise Backends, Part 1](https://medium.com/gitconnected/the-missing-runtime-between-ai-agents-and-enterprise-backends-part-1-of-2-191f3f634963) — the conceptual foundation and problem framing behind Lattice
+- [The Missing Runtime Between AI Agents and Enterprise Backends, Part 2 ](https://www.linkedin.com/pulse/missing-runtime-between-ai-agents-enterprise-backends-hammad-abbasi-fkref/) — from failure patterns to a working runtime: shifting the execution boundary, capabilities as code, and a practical path to production
 - [Covenant Layer](https://github.com/csehammad/covenant-layer) — open protocol for outcome-based coordination across trust boundaries
 - [What Pulling Espresso Taught Me About Building Enterprise AI Agents](https://levelup.gitconnected.com/what-pulling-espresso-taught-me-about-building-enterprise-ai-agents) — why capability design is the "grind size" that determines extraction quality in AI agent systems
 - [The Future of Agents Is Outcome Coordination](https://levelup.gitconnected.com/the-future-of-agents-is-outcome-coordination-09807612ca2d) — the architectural thesis behind Covenant Layer
